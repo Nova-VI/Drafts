@@ -1,11 +1,21 @@
 .footer {
-  margin-top: 48px;
-  padding: 18px 0;
+  margin-top: 8px; /* minimal gap from content */
+  padding: 0; /* remove extra vertical padding so footer sits flush */
+  margin-bottom: 0;
+}
+
+.footer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 16px;
   background: var(--surface);
-  border-radius: var(--radius);
+  border-radius: 12px;
   box-shadow: var(--shadow-sm);
   color: var(--muted);
   font-size: 15px;
+  margin-bottom: 0;
 }
 
 .footer-content {
@@ -13,6 +23,7 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .footer-links {

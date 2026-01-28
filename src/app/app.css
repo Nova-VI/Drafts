@@ -1,0 +1,23 @@
+/* App-level layout tweaks to align navbar/footer with container */
+:host {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh; /* ensure footer can sit at viewport bottom */
+}
+
+main.container {
+	flex: 1 1 auto; /* allow main content to grow and push footer down */
+	padding-top: 0; /* no extra gap under navbar */
+	padding-bottom: 0; /* no extra gap above footer */
+}
+
+/* ensure router-outlet container content doesn't run to the edges on small screens */
+@media (max-width: 640px) {
+	main.container {
+		padding-left: 12px;
+		padding-right: 12px;
+		padding-top: 64px; /* offset for the fixed mobile navbar */
+	}
+}
+
+/* (moved global hide rules to global stylesheet) */
