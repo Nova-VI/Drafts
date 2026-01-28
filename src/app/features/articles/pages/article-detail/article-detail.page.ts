@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { map } from 'rxjs/operators';
 import { ArticlesStore } from '../../data/articles.store';
 
@@ -15,6 +15,7 @@ import { ArticlesStore } from '../../data/articles.store';
 export class ArticleDetailPage {
   readonly store = inject(ArticlesStore);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly newCommentText = signal('');
   readonly replyingTo = signal<string | null>(null);
@@ -54,5 +55,16 @@ export class ArticleDetailPage {
     if (!text) return;
     this.store.addReply(parentId, text);
     this.cancelReply();
+  }
+
+  deleteThisArticle() {
+    const a = this.article();
+    if (!a) return;
+
+    const confirmFn = (globalThis as any)?.confirm as ((message: string) => boolean) | undefined;
+    if (confirmFn && !confirmFn('Delete this article?')) return;
+
+    this.store.deleteArticle(a.id);
+    this.router.navigate(['/articles']);
   }
 }

@@ -5,14 +5,17 @@
       <p class="subTitle">Dummy data</p>
     </div>
 
-    <input
-      class="input search"
-      type="search"
-      placeholder="Search title, content, owner…"
-      [value]="query()"
-      (input)="setQuery(($any($event.target).value))"
-      aria-label="Search articles"
-    />
+    <div class="headerActions">
+      <a class="btn" [routerLink]="['/articles/new']">New article</a>
+      <input
+        class="input search"
+        type="search"
+        placeholder="Search title, content, owner…"
+        [value]="query()"
+        (input)="setQuery(($any($event.target).value))"
+        aria-label="Search articles"
+      />
+    </div>
   </header>
 
   @if (articles().length === 0) {

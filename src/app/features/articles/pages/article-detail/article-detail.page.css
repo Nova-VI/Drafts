@@ -20,6 +20,16 @@
   margin-top: 16px;
 }
 
+.dangerBtn {
+  border-color: color-mix(in oklab, var(--danger) 45%, var(--border));
+  background: color-mix(in oklab, var(--danger) 14%, rgba(255, 255, 255, 0.06));
+  color: var(--text);
+}
+
+.dangerBtn:hover {
+  background: color-mix(in oklab, var(--danger) 18%, rgba(255, 255, 255, 0.10));
+}
+
 .divider {
   height: 1px;
   background: var(--border);

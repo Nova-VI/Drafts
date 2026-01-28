@@ -314,6 +314,40 @@ export class ArticlesStore {
     return new Date().toISOString();
   }
 
+  private slugify(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80);
+  }
+
+  private removeFromTree(list: Article[], targetId: string): Article[] {
+    let changed = false;
+    const next: Article[] = [];
+
+    for (const a of list) {
+      if (a.id === targetId) {
+        changed = true;
+        continue;
+      }
+
+      let updated = a;
+      if (a.comments.length > 0) {
+        const updatedChildren = this.removeFromTree(a.comments, targetId);
+        if (updatedChildren !== a.comments) {
+          updated = { ...a, comments: updatedChildren };
+        }
+      }
+
+      if (updated !== a) changed = true;
+      next.push(updated);
+    }
+
+    return changed ? next : list;
+  }
+
   private newId(prefix: string): string {
     try {
       const uuid = globalThis?.crypto?.randomUUID?.();
@@ -404,6 +438,38 @@ export class ArticlesStore {
         };
       })
     );
+  }
+
+  addArticle(input: { title: string; content: string; images?: string[]; slug?: string | null }): string {
+    const now = this.nowIso();
+    const title = input.title.trim();
+    const content = input.content.trim();
+    const id = this.newId('a');
+
+    const derivedSlug = (input.slug ?? null) ?? (title ? this.slugify(title) : null);
+
+    const article: Article = {
+      id,
+      fatherId: null,
+      title,
+      content,
+      images: input.images ?? [],
+      owner: this.currentUserLabel(),
+      comments: [],
+      upvotes: 0,
+      downvotes: 0,
+      voters: [],
+      slug: derivedSlug && derivedSlug.length > 0 ? derivedSlug : null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.items.update((list) => [article, ...list]);
+    return id;
+  }
+
+  deleteArticle(articleId: string) {
+    this.items.update((list) => this.removeFromTree(list, articleId));
   }
 
   addReply(parentId: string, content: string) {

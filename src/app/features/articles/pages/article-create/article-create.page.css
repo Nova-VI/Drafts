@@ -1,0 +1,43 @@
+:host {
+  display: block;
+}
+
+.formCard {
+  padding: 18px;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.labelText {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 220px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 0;
+}
