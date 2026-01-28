@@ -1,0 +1,86 @@
+<main class="container">
+  <header class="header">
+    <div>
+      <h1 class="pageTitle">Articles</h1>
+      <p class="subTitle">Dummy data</p>
+    </div>
+
+    <input
+      class="input search"
+      type="search"
+      placeholder="Search title, content, owner…"
+      [value]="query()"
+      (input)="setQuery(($any($event.target).value))"
+      aria-label="Search articles"
+    />
+  </header>
+
+  @if (articles().length === 0) {
+    <section class="empty card">
+      <p>No articles match your search.</p>
+    </section>
+  } @else {
+    <section class="list">
+      @for (a of articles(); track a.id) {
+        <article class="row card">
+          <section class="content">
+            <div class="meta">
+              <span class="author">{{ a.owner }}</span>
+              <span class="dot">•</span>
+              <time class="date">{{ a.createdAt | date: 'mediumDate' }}</time>
+              <span class="dot">•</span>
+              <span class="reading">{{ readingMinutesOf(a) }} min read</span>
+              <span class="dot">•</span>
+              <span class="comments">{{ a.comments.length }} comments</span>
+            </div>
+
+            <h2 class="cardTitle">{{ a.title }}</h2>
+            <p class="excerpt">{{ excerptOf(a) }}</p>
+
+            <div class="actions" aria-label="Post actions">
+              <button
+                type="button"
+                class="btn voteBtn"
+                [class.active]="isUpvoted(a)"
+                (click)="upvote(a.id)"
+                aria-label="Upvote"
+              >
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 11V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M6 11h4l5.4-6.3c.6-.7 1.7-.2 1.6.7l-.7 5.6H20a2 2 0 0 1 2 2.2l-1.1 7A2 2 0 0 1 18.9 22H10a4 4 0 0 1-4-4v-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="label">{{ a.upvotes }}</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn voteBtn"
+                [class.activeDown]="isDownvoted(a)"
+                (click)="downvote(a.id)"
+                aria-label="Downvote"
+              >
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 13V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M18 13h-4L8.6 19.3c-.6.7-1.7.2-1.6-.7l.7-5.6H4a2 2 0 0 1-2-2.2l1.1-7A2 2 0 0 1 5.1 2H14a4 4 0 0 1 4 4v7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="label">{{ a.downvotes }}</span>
+              </button>
+            </div>
+
+            <!-- 
+              @if (a.slug) {
+                <div class="tags">
+                  <span class="pill">{{ a.slug }}</span>
+                </div>
+              }
+            --> 
+          </section>
+        </article>
+      }
+    </section>
+  }
+</main>
