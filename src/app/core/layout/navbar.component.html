@@ -1,0 +1,15 @@
+<nav class="navbar card">
+  <div class="container navbar-content">
+    <a class="navbar-brand" href="/">Drafts</a>
+    <button class="navbar-toggle btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+      <span *ngIf="!isMobileMenuOpen">☰</span>
+      <span *ngIf="isMobileMenuOpen">✕</span>
+    </button>
+    <ul class="navbar-links" [class.open]="isMobileMenuOpen">
+      <li><a href="/articles">Articles</a></li>
+      <li><a href="/search">Search</a></li>
+      <li><a href="/notifications">Notifications</a></li>
+      <li><a href="/profile">Profile</a></li>
+    </ul>
+  </div>
+</nav>
