@@ -50,6 +50,18 @@ body.nav-hidden .navbar-card {
   justify-content: space-between;
 }
 
+.navbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.navbar-actions .username {
+  color: var(--text);
+  font-weight: 600;
+  margin-right: 6px;
+}
+
 .navbar-brand {
   font-size: 22px;
   font-weight: 700;
@@ -72,6 +84,18 @@ body.nav-hidden .navbar-card {
   margin: 0;
   padding: 0;
   align-items: center;
+}
+
+.navbar-links .auth-item {
+  margin-left: auto; /* push auth item to the right */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-username {
+  font-weight: 600;
+  color: var(--text);
 }
 
 .navbar-links li a {

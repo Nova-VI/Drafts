@@ -1,6 +1,7 @@
-import { Component, HostBinding, HostListener, OnInit } from '@angular/core';
+import { Component, HostBinding, HostListener, OnInit, inject } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -11,6 +12,9 @@ import { RouterLink } from '@angular/router';
 })
 export class NavbarComponent implements OnInit {
   isMobileMenuOpen = false;
+
+  // expose auth signals to template
+  public auth = inject(AuthService);
 
   private lastScroll = 0;
   private minHideScroll = 10;
@@ -60,6 +64,10 @@ export class NavbarComponent implements OnInit {
 
   ngOnInit(): void {
     this.updateBodyClass();
+  }
+
+  signOut(): void {
+    this.auth.logout();
   }
 
   private updateBodyClass() {
