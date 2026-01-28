@@ -10,6 +10,13 @@
   margin-bottom: 20px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .search {
   width: min(380px, 100%);
 }
@@ -22,6 +29,11 @@
 
 @media (max-width: 720px) {
   .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerActions {
     flex-direction: column;
     align-items: stretch;
   }
@@ -99,6 +111,15 @@
   font-size: 16px;
   font-weight: 650;
   letter-spacing: -0.01em;
+}
+
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
 }
 
 .excerpt {

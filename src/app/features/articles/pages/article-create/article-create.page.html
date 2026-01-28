@@ -1,0 +1,44 @@
+<main class="container">
+  <header class="header">
+    <div>
+      <a class="btn ghost" [routerLink]="['/articles']">← Back</a>
+      <h1 class="pageTitle">New article</h1>
+      <p class="subTitle">Local-only (no auth yet)</p>
+    </div>
+  </header>
+
+  <section class="card formCard">
+    <form class="form" (submit)="$event.preventDefault(); submit()">
+      <label class="field">
+        <span class="labelText">Title</span>
+        <input
+          class="input"
+          type="text"
+          placeholder="A clear title…"
+          [value]="title()"
+          (input)="title.set(($any($event.target).value))"
+        />
+      </label>
+
+      <label class="field">
+        <span class="labelText">Content</span>
+        <textarea
+          class="input textarea"
+          rows="10"
+          placeholder="Write something…"
+          [value]="content()"
+          (input)="content.set(($any($event.target).value))"
+        ></textarea>
+      </label>
+
+      <div class="actions">
+        <a class="btn" [routerLink]="['/articles']">Cancel</a>
+        <button type="submit" class="btn" [disabled]="!canSubmit()">Create</button>
+      </div>
+
+      @if (!canSubmit()) {
+        <p class="muted hint">Title must be ≥ 3 chars, content ≥ 10 chars.</p>
+      }
+    </form>
+  </section>
+</main>
