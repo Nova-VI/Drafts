@@ -97,9 +97,14 @@ export class AuthService {
     const token = localStorage.getItem('token');
     
     if (token) {
-      this.http.get<User>(API.users.me).subscribe({
+      this.http.get<User>(API.users.me, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).subscribe({
         next: user => this.currentUserSignal.set(user),
-        error: () => this.logout()
+        error: () => {
+          localStorage.removeItem('token');
+          this.currentUserSignal.set(null);
+        }
       });
     }
   }

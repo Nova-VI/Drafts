@@ -2,11 +2,6 @@
   @if (currentUser(); as user) {
     <div class="profile-card">
       <div class="profile-header">
-        <img 
-          [src]="user.avatar || 'https://via.placeholder.com/120'" 
-          [alt]="user.username"
-          class="profile-avatar"
-        >
         <div class="profile-info">
           <h2 class="profile-username">{{ user.username }}</h2>
           <p class="profile-email">{{ user.email }}</p>
@@ -30,16 +25,23 @@
           }
 
           <div class="form-group">
-            <label for="avatar">Avatar URL</label>
+            <label for="name">First Name</label>
             <input
-              id="avatar"
-              type="url"
-              formControlName="avatar"
-              placeholder="https://example.com/avatar.jpg"
+              id="name"
+              type="text"
+              formControlName="name"
+              placeholder="Enter your first name"
             >
-            @if (profileForm.controls.avatar.invalid && profileForm.controls.avatar.touched) {
-              <span class="error">Please enter a valid URL</span>
-            }
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input
+              id="lastName"
+              type="text"
+              formControlName="lastName"
+              placeholder="Enter your last name"
+            >
           </div>
 
           <div class="form-group">

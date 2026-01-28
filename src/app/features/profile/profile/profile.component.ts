@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -7,10 +7,10 @@ import { User } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-profile',
-  standalone: true,
   imports: [ReactiveFormsModule],
   templateUrl: './profile.component.html',
-  styleUrl: './profile.component.css'
+  styleUrl: './profile.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProfileComponent {
   private authService = inject(AuthService);
@@ -23,7 +23,8 @@ export class ProfileComponent {
   errorMessage = signal('');
 
   profileForm = this.fb.nonNullable.group({
-    avatar: ['', [Validators.pattern(/^https?:\/\/.+/)]],
+    name: [''],
+    lastName: [''],
     bio: ['', [Validators.maxLength(200)]]
   });
 
@@ -31,12 +32,13 @@ export class ProfileComponent {
     this.profileForm.valid && !this.isLoading()
   );
 
-  toggleEditMode() {
+  toggleEditMode(): void {
     if (!this.isEditing()) {
       const user = this.currentUser();
       if (user) {
         this.profileForm.patchValue({
-          avatar: user.avatar || '',
+          name: user.name || '',
+          lastName: user.lastName || '',
           bio: user.bio || ''
         });
       }
@@ -44,7 +46,7 @@ export class ProfileComponent {
     this.isEditing.update(v => !v);
   }
 
-  onSave() {
+  onSave(): void {
     if (!this.canSave()) return;
 
     this.isLoading.set(true);
@@ -52,7 +54,9 @@ export class ProfileComponent {
 
     const updates = this.profileForm.getRawValue();
 
-    this.http.put<User>(API.users.updateMe, updates).subscribe({
+    this.http.patch<User>(API.users.updateMe, updates, {
+      headers: { Authorization: `Bearer ${this.authService.getToken()}` }
+    }).subscribe({
       next: (updatedUser) => {
         this.authService.updateUser(updatedUser);
         this.isEditing.set(false);
@@ -69,5 +73,6 @@ export class ProfileComponent {
     this.isEditing.set(false);
     this.profileForm.reset();
     this.errorMessage.set('');
+
   }
 }

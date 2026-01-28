@@ -2,9 +2,11 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  name?: string;
+  lastName?: string;
   avatar?: string;
   bio?: string;
-  createdAt: Date;
+  createdAt?: Date;
 }
 
 export interface LoginRequest {
