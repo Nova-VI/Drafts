@@ -15,9 +15,18 @@
           class="input"
           type="text"
           placeholder="A clear title…"
+          maxlength="120"
+          [attr.aria-invalid]="!!titleError()"
           [value]="title()"
           (input)="title.set(($any($event.target).value))"
         />
+        <div class="metaRow" aria-hidden="true">
+          <span class="muted">Max 120</span>
+          <span class="muted">{{ titleTrimmedLen() }}/120</span>
+        </div>
+        @if (titleError()) {
+          <p class="error">{{ titleError() }}</p>
+        }
       </label>
 
       <label class="field">
@@ -26,18 +35,29 @@
           class="input textarea"
           rows="10"
           placeholder="Write something…"
+          maxlength="10000"
+          [attr.aria-invalid]="!!contentError()"
           [value]="content()"
           (input)="content.set(($any($event.target).value))"
         ></textarea>
+        <div class="metaRow" aria-hidden="true">
+          <span class="muted">Min 10</span>
+          <span class="muted">{{ contentTrimmedLen() }}/10000</span>
+        </div>
+        @if (contentError()) {
+          <p class="error">{{ contentError() }}</p>
+        }
       </label>
 
       <div class="actions">
         <a class="btn" [routerLink]="['/articles']">Cancel</a>
-        <button type="submit" class="btn" [disabled]="!canSubmit()">Create</button>
+        <button type="submit" class="btn" [disabled]="!canSubmit() || submitting()">
+          @if (submitting()) { Creating… } @else { Create }
+        </button>
       </div>
 
-      @if (!canSubmit()) {
-        <p class="muted hint">Title must be ≥ 3 chars, content ≥ 10 chars.</p>
+      @if (attemptedSubmit() && !canSubmit()) {
+        <p class="muted hint">Fix the fields above to continue.</p>
       }
     </form>
   </section>

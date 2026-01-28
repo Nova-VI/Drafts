@@ -16,6 +16,19 @@
   gap: 8px;
 }
 
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--danger);
+}
+
 .labelText {
   font-size: 12px;
   color: var(--muted);
