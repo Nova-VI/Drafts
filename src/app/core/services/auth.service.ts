@@ -78,6 +78,10 @@ export class AuthService {
     this.router.navigate(['/auth/signin']);
   }
 
+  updateUser(user: User): void {
+    this.currentUserSignal.set(user);
+  }
+
   getToken(): string | null {
     if (this.isBrowser) {
       return localStorage.getItem('token');

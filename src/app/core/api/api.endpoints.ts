@@ -13,6 +13,7 @@ export const API = {
     byEmail: (email: string) => `${base}/users/email/${email}`,
     byUsername: (username: string) => `${base}/users/username/${username}`,
     me: `${base}/users/infos`,
+    updateMe: `${base}/users/me`, 
     all: `${base}/users`,
     search: (term: string) => `${base}/users/search/${term}`,
   },

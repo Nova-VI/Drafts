@@ -1,0 +1,84 @@
+<div class="profile-container">
+  @if (currentUser(); as user) {
+    <div class="profile-card">
+      <div class="profile-header">
+        <img 
+          [src]="user.avatar || 'https://via.placeholder.com/120'" 
+          [alt]="user.username"
+          class="profile-avatar"
+        >
+        <div class="profile-info">
+          <h2 class="profile-username">{{ user.username }}</h2>
+          <p class="profile-email">{{ user.email }}</p>
+        </div>
+      </div>
+
+      @if (!isEditing()) {
+        <!-- VIEW MODE -->
+        <div class="profile-bio">
+          <h3>Bio</h3>
+          <p>{{ user.bio || 'No bio yet. Click edit to add one!' }}</p>
+        </div>
+        <button class="btn btn-primary" (click)="toggleEditMode()">
+          Edit Profile
+        </button>
+      } @else {
+        <!-- EDIT MODE -->
+        <form [formGroup]="profileForm" (ngSubmit)="onSave()">
+          @if (errorMessage()) {
+            <div class="error-message">{{ errorMessage() }}</div>
+          }
+
+          <div class="form-group">
+            <label for="avatar">Avatar URL</label>
+            <input
+              id="avatar"
+              type="url"
+              formControlName="avatar"
+              placeholder="https://example.com/avatar.jpg"
+            >
+            @if (profileForm.controls.avatar.invalid && profileForm.controls.avatar.touched) {
+              <span class="error">Please enter a valid URL</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="bio">Bio</label>
+            <textarea
+              id="bio"
+              formControlName="bio"
+              rows="4"
+              placeholder="Tell us about yourself..."
+              maxlength="200"
+            ></textarea>
+            <span class="char-count">
+              {{ profileForm.controls.bio.value?.length || 0 }} / 200
+            </span>
+          </div>
+
+          <div class="form-actions">
+            <button 
+              type="button" 
+              class="btn btn-secondary" 
+              (click)="onCancel()"
+              [disabled]="isLoading()"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              class="btn btn-primary" 
+              [disabled]="!canSave()"
+            >
+              {{ isLoading() ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </div>
+        </form>
+      }
+    </div>
+  } @else {
+    <div class="no-user">
+      <p>Please sign in to view your profile.</p>
+    </div>
+  }
+</div>

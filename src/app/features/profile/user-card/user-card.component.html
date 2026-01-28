@@ -1,0 +1,13 @@
+<div class="user-card">
+  <img 
+    [src]="user().avatar || 'https://via.placeholder.com/40'" 
+    [alt]="user().username"
+    class="avatar"
+  >
+  <div class="user-info">
+    <h4 class="username">{{ user().username }}</h4>
+    @if (user().bio) {
+      <p class="bio">{{ user().bio }}</p>
+    }
+  </div>
+</div>
