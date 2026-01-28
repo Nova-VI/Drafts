@@ -34,15 +34,17 @@
               <span class="comments">{{ a.comments.length }} comments</span>
             </div>
 
-            <h2 class="cardTitle">{{ a.title }}</h2>
+            <h2 class="cardTitle">
+              <a class="titleLink" [routerLink]="['/articles', a.id]">{{ a.title }}</a>
+            </h2>
             <p class="excerpt">{{ excerptOf(a) }}</p>
 
             <div class="actions" aria-label="Post actions">
               <button
                 type="button"
                 class="btn voteBtn"
-                [class.active]="isUpvoted(a)"
-                (click)="upvote(a.id)"
+                [class.active]="store.isUpvoted(a)"
+                (click)="store.upvote(a.id)"
                 aria-label="Upvote"
               >
                 <span class="icon" aria-hidden="true">
@@ -57,8 +59,8 @@
               <button
                 type="button"
                 class="btn voteBtn"
-                [class.activeDown]="isDownvoted(a)"
-                (click)="downvote(a.id)"
+                [class.activeDown]="store.isDownvoted(a)"
+                (click)="store.downvote(a.id)"
                 aria-label="Downvote"
               >
                 <span class="icon" aria-hidden="true">

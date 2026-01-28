@@ -1,0 +1,85 @@
+.detail {
+  padding: 18px;
+}
+
+.body {
+  margin-top: 12px;
+}
+
+.content {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.commentsSection {
+  display: block;
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.voteBtn {
+  padding: 8px 10px;
+  min-height: 36px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.voteBtn.active {
+  border-color: color-mix(in oklab, var(--brand-2) 45%, var(--border));
+  background: color-mix(in oklab, var(--brand-2) 18%, transparent);
+  color: var(--text);
+}
+
+.voteBtn.activeDown {
+  border-color: color-mix(in oklab, var(--brand) 45%, var(--border));
+  background: color-mix(in oklab, var(--brand) 18%, transparent);
+  color: var(--text);
+}
+
+.icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+.icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+}
+
+.count {
+  font-weight: 750;
+}
+
+.word {
+  font-size: 12px;
+  opacity: 0.85;
+}

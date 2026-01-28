@@ -1,0 +1,141 @@
+import { Injectable, signal } from '@angular/core';
+import type { Article } from '../../../shared/models/article.model';
+import type { Vote, Voter } from '../../../shared/models/voter.model';
+
+@Injectable({ providedIn: 'root' })
+export class ArticlesStore {
+  private readonly items = signal<Article[]>([
+    {
+      id: 'a1',
+      fatherId: null,
+      title: 'Drafts: a modern blog platform',
+      content:
+        "lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      images: [],
+      owner: 'demo-user',
+      comments: [],
+      upvotes: 12,
+      downvotes: 1,
+      voters: [],
+      slug: 'drafts-a-modern-blog-platform',
+      createdAt: '2026-01-28T10:00:00.000Z',
+      updatedAt: '2026-01-28T10:00:00.000Z',
+    },
+    {
+      id: 'a2',
+      fatherId: null,
+      title: 'Design system first, features second',
+      content:
+        'How a small set of primitives helps three developers ship in parallel without conflicts. Build the layout and components first, then wire APIs.',
+      images: [],
+      owner: 'demo-user',
+      comments: [],
+      upvotes: 5,
+      downvotes: 0,
+      voters: [],
+      slug: 'design-system-first-features-second',
+      createdAt: '2026-01-27T16:20:00.000Z',
+      updatedAt: '2026-01-27T16:20:00.000Z',
+    },
+    {
+      id: 'a3',
+      fatherId: null,
+      title: 'API Endpoints',
+      content:
+        'API endpoints are served by a Node.js backend using Express. The database is Postgres, API routes are RESTful and secured with JWT tokens.',
+      images: [],
+      owner: 'backend-team',
+      comments: [],
+      upvotes: 9,
+      downvotes: 2,
+      voters: [],
+      slug: 'api-endpoints',
+      createdAt: '2026-01-26T09:15:00.000Z',
+      updatedAt: '2026-01-26T09:15:00.000Z',
+    },
+  ]);
+
+  readonly articles = this.items.asReadonly();
+
+  getById(id: string): Article | undefined {
+    return this.items().find((a) => a.id === id);
+  }
+
+  private currentVoterId(): string {
+    try {
+      return globalThis?.localStorage?.getItem('userId') ?? 'anonymous';
+    } catch {
+      return 'anonymous';
+    }
+  }
+
+  private myVoteOn(article: Article): Vote {
+    const me = this.currentVoterId();
+    const record = article.voters.find((v) => v.voterId === me);
+    return record?.vote ?? 'null';
+  }
+
+  isUpvoted(article: Article): boolean {
+    return this.myVoteOn(article) === 'upvote';
+  }
+
+  isDownvoted(article: Article): boolean {
+    return this.myVoteOn(article) === 'downvote';
+  }
+
+  upvote(articleId: string) {
+    this.items.update((list) =>
+      list.map((a) => {
+        if (a.id !== articleId) return a;
+
+        const me = this.currentVoterId();
+        const prev = this.myVoteOn(a);
+        const voters: Voter[] = a.voters.filter((v) => v.voterId !== me);
+
+        if (prev === 'upvote') {
+          return {
+            ...a,
+            upvotes: Math.max(0, a.upvotes - 1),
+            voters,
+          };
+        }
+
+        voters.push({ voterId: me, vote: 'upvote' });
+        return {
+          ...a,
+          upvotes: a.upvotes + 1,
+          downvotes: prev === 'downvote' ? Math.max(0, a.downvotes - 1) : a.downvotes,
+          voters,
+        };
+      })
+    );
+  }
+
+  downvote(articleId: string) {
+    this.items.update((list) =>
+      list.map((a) => {
+        if (a.id !== articleId) return a;
+
+        const me = this.currentVoterId();
+        const prev = this.myVoteOn(a);
+        const voters: Voter[] = a.voters.filter((v) => v.voterId !== me);
+
+        if (prev === 'downvote') {
+          return {
+            ...a,
+            downvotes: Math.max(0, a.downvotes - 1),
+            voters,
+          };
+        }
+
+        voters.push({ voterId: me, vote: 'downvote' });
+        return {
+          ...a,
+          downvotes: a.downvotes + 1,
+          upvotes: prev === 'upvote' ? Math.max(0, a.upvotes - 1) : a.upvotes,
+          voters,
+        };
+      })
+    );
+  }
+}

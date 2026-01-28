@@ -1,0 +1,81 @@
+<main class="container">
+  <header class="header">
+    <div>
+      <a class="btn ghost" [routerLink]="['/articles']">← Back</a>
+      <h1 class="pageTitle">Article</h1>
+      <p class="subTitle">Dummy data</p>
+    </div>
+  </header>
+
+  @if (!article()) {
+    <section class="card empty">
+      <p>Article not found.</p>
+      <a class="btn" [routerLink]="['/articles']">Go to feed</a>
+    </section>
+  } @else {
+    <article class="card detail">
+      <div class="meta">
+        <span class="author">{{ article()!.owner }}</span>
+        <span class="dot">•</span>
+        <time class="date">{{ article()!.createdAt | date: 'medium' }}</time>
+        <span class="dot">•</span>
+        <span class="comments">{{ article()!.comments.length }} comments</span>
+      </div>
+
+      <h2 class="cardTitle">{{ article()!.title }}</h2>
+
+      <div class="body">
+        <p class="content">{{ article()!.content }}</p>
+      </div>
+
+      <div class="actions" aria-label="Reactions">
+        <button
+          type="button"
+          class="btn voteBtn"
+          [class.active]="store.isUpvoted(article()!)"
+          (click)="store.upvote(article()!.id)"
+          aria-label="Like"
+        >
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 11V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M6 11h4l5.4-6.3c.6-.7 1.7-.2 1.6.7l-.7 5.6H20a2 2 0 0 1 2 2.2l-1.1 7A2 2 0 0 1 18.9 22H10a4 4 0 0 1-4-4v-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="label">
+            <span class="count">{{ article()!.upvotes }}</span>
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="btn voteBtn"
+          [class.activeDown]="store.isDownvoted(article()!)"
+          (click)="store.downvote(article()!.id)"
+          aria-label="Dislike"
+        >
+          <span class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 13V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M18 13h-4L8.6 19.3c-.6.7-1.7.2-1.6-.7l.7-5.6H4a2 2 0 0 1-2-2.2l1.1-7A2 2 0 0 1 5.1 2H14a4 4 0 0 1 4 4v7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="label">
+            <span class="count">{{ article()!.downvotes }}</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="divider" role="separator" aria-hidden="true"></div>
+
+      <section class="commentsSection" aria-label="Comments">
+        <h3 class="sectionTitle">Comments</h3>
+        @if (article()!.comments.length === 0) {
+          <p class="muted">No comments yet.</p>
+        } @else {
+          <p class="muted">{{ article()!.comments.length }} comments</p>
+        }
+      </section>
+    </article>
+  }
+</main>
