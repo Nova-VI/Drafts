@@ -6,6 +6,7 @@ import { searchRoutes } from './features/search/search.routes';
 import { notificationsRoutes } from './features/notifications/notifications.routes';
 
 export const routes: Routes = [
+	{ path: '', redirectTo: '/articles', pathMatch: 'full' },
 	...authRoutes,
 	...articlesRoutes,
 	...searchRoutes,
