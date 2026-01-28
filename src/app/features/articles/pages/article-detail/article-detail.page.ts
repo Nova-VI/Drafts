@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { map } from 'rxjs/operators';
@@ -16,6 +16,10 @@ export class ArticleDetailPage {
   readonly store = inject(ArticlesStore);
   private readonly route = inject(ActivatedRoute);
 
+  readonly newCommentText = signal('');
+  readonly replyingTo = signal<string | null>(null);
+  readonly replyText = signal('');
+
   private readonly id = toSignal(this.route.paramMap.pipe(map((pm) => pm.get('id') ?? '')),
     { initialValue: '' }
   );
@@ -25,4 +29,30 @@ export class ArticleDetailPage {
     if (!id) return undefined;
     return this.store.getById(id);
   });
+
+  addRootComment() {
+    const a = this.article();
+    if (!a) return;
+    const text = this.newCommentText().trim();
+    if (!text) return;
+    this.store.addReply(a.id, text);
+    this.newCommentText.set('');
+  }
+
+  startReply(commentId: string) {
+    this.replyingTo.set(commentId);
+    this.replyText.set('');
+  }
+
+  cancelReply() {
+    this.replyingTo.set(null);
+    this.replyText.set('');
+  }
+
+  submitReply(parentId: string) {
+    const text = this.replyText().trim();
+    if (!text) return;
+    this.store.addReply(parentId, text);
+    this.cancelReply();
+  }
 }

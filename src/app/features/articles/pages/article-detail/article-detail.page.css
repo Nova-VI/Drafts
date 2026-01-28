@@ -30,11 +30,110 @@
   display: block;
 }
 
+.commentsHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.countLine {
+  margin: 0;
+}
+
 .sectionTitle {
   margin: 0 0 8px;
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
+}
+
+
+.composer {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+
+.composerInput {
+  resize: vertical;
+  min-height: 86px;
+}
+
+.composerActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment {
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.commentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.commentBody {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.commentActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.miniBtn {
+  padding: 7px 10px;
+  min-height: 34px;
+  font-size: 12.5px;
+}
+
+.replyBtn {
+  color: var(--muted);
+}
+
+.replyForm {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.replyInput {
+  resize: vertical;
+  min-height: 78px;
+}
+
+.replyActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.replies {
+  margin-top: 12px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
 }
 
 .voteBtn {
