@@ -1,0 +1,116 @@
+<div class="auth-container">
+  <div class="auth-card card">
+    
+    <div class="auth-header">
+      <h1>Create Account</h1>
+      <p class="subTitle">Sign up to get started with Drafts</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="error-banner">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+      
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input 
+          id="username" 
+          type="text" 
+          class="input"
+          formControlName="username"
+          [class.input-error]="hasError('username', 'required') || hasError('username', 'minlength') || hasError('username', 'maxlength')"
+          placeholder="Choose a username"
+          autocomplete="username"
+        >
+        @if (hasError('username', 'required')) {
+          <span class="error-text">Username is required</span>
+        }
+        @if (hasError('username', 'minlength')) {
+          <span class="error-text">Username must be at least 3 characters</span>
+        }
+        @if (hasError('username', 'maxlength')) {
+          <span class="error-text">Username must not exceed 20 characters</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input 
+          id="email" 
+          type="email" 
+          class="input"
+          formControlName="email"
+          [class.input-error]="hasError('email', 'required') || hasError('email', 'email')"
+          placeholder="you@example.com"
+          autocomplete="email"
+        >
+        @if (hasError('email', 'required')) {
+          <span class="error-text">Email is required</span>
+        }
+        @if (hasError('email', 'email')) {
+          <span class="error-text">Please enter a valid email</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          id="password" 
+          type="password" 
+          class="input"
+          formControlName="password"
+          [class.input-error]="hasError('password', 'required') || hasError('password', 'minlength')"
+          placeholder="Create a password"
+          autocomplete="new-password"
+        >
+        @if (hasError('password', 'required')) {
+          <span class="error-text">Password is required</span>
+        }
+        @if (hasError('password', 'minlength')) {
+          <span class="error-text">Password must be at least 6 characters</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input 
+          id="confirmPassword" 
+          type="password" 
+          class="input"
+          formControlName="confirmPassword"
+          [class.input-error]="hasError('confirmPassword', 'required') || hasFormError('passwordMismatch')"
+          placeholder="Re-enter your password"
+          autocomplete="new-password"
+        >
+        @if (hasError('confirmPassword', 'required')) {
+          <span class="error-text">Please confirm your password</span>
+        }
+        @if (hasFormError('passwordMismatch')) {
+          <span class="error-text">Passwords do not match</span>
+        }
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn-primary"
+        [disabled]="!canSubmit()"
+      >
+        @if (isSubmitting()) {
+          <span class="spinner"></span>
+          <span>Creating account...</span>
+        } @else {
+          <span>Create Account</span>
+        }
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      Already have an account? 
+      <a routerLink="/auth/signin" class="link">Sign in</a>
+    </p>
+    
+  </div>
+</div>

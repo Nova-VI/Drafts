@@ -14,7 +14,7 @@ export const API = {
     byUsername: (username: string) => `${base}/users/username/${username}`,
     me: `${base}/users/infos`,
     all: `${base}/users`,
-    search: (term: string) => `${base}/users/serch/${term}`,
+    search: (term: string) => `${base}/users/search/${term}`,
   },
 
   articles: {
