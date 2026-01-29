@@ -21,6 +21,7 @@ export class ProfileComponent {
   isEditing = signal(false);
   isLoading = signal(false);
   errorMessage = signal('');
+  successMessage = signal('');
 
   profileForm = this.fb.nonNullable.group({
     name: [''],
@@ -60,6 +61,8 @@ export class ProfileComponent {
       this.authService.updateUser(updatedUser);
       this.isEditing.set(false);
       this.isLoading.set(false);
+      this.successMessage.set('✓ Saved');
+      setTimeout(() => this.successMessage.set(''), 2000);
     },
     error: (err) => {
       // errorInterceptor now provides clean error.message
@@ -73,6 +76,7 @@ export class ProfileComponent {
     this.isEditing.set(false);
     this.profileForm.reset();
     this.errorMessage.set('');
+    this.successMessage.set('');
 
   }
 }

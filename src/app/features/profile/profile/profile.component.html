@@ -1,6 +1,10 @@
 <div class="profile-container">
   @if (currentUser(); as user) {
     <div class="profile-card">
+      @if (successMessage()) {
+        <div class="success-toast">{{ successMessage() }}</div>
+      }
+      
       <div class="profile-header">
         <div class="profile-info">
           <h2 class="profile-username">{{ user.username }}</h2>
@@ -10,10 +14,18 @@
 
       @if (!isEditing()) {
         <!-- VIEW MODE -->
-        <div class="profile-bio">
-          <h3>Bio</h3>
-          <p>{{ user.bio || 'No bio yet. Click edit to add one!' }}</p>
+        <div class="profile-about">
+          <h3 class="about-heading">About Me</h3>
+          <p class="about-text">{{ user.bio || 'No bio yet. Click edit to add one!' }}</p>
         </div>
+        
+        @if (user.name || user.lastName) {
+          <div class="profile-detail">
+            <span class="detail-label">Full Name:</span>
+            <span class="detail-value">{{ user.name }} {{ user.lastName }}</span>
+          </div>
+        }
+        
         <button class="btn btn-primary" (click)="toggleEditMode()">
           Edit Profile
         </button>
