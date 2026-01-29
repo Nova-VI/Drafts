@@ -31,7 +31,11 @@ export class AuthService {
   );
 
   constructor() {
-    this.checkStoredAuth();
+    // Defer stored auth check so it doesn't run during DI construction phase.
+    // Running it synchronously can cause a circular dependency because
+    // `checkStoredAuth` performs an HTTP request which triggers the
+    // HTTP interceptors that may inject this service again.
+    Promise.resolve().then(() => this.checkStoredAuth());
   }
 
   login(credentials: LoginRequest): Observable<User> {
@@ -40,7 +44,11 @@ export class AuthService {
     return this.http.post<AuthResponse>(API.auth.login, credentials).pipe(
       tap(response => {
         if (this.isBrowser) {
-          localStorage.setItem('token', response.Authorization);
+          // Some backends return 'Authorization' with the 'Bearer ' prefix.
+          // Normalize and store only the raw token value.
+          const raw = response.Authorization ?? '';
+          const token = raw.replace(/^Bearer\s+/i, '');
+          localStorage.setItem('token', token);
         }
       }),
       switchMap(() => this.http.get<User>(API.users.me)),
@@ -64,7 +72,9 @@ export class AuthService {
     return this.http.post<AuthResponse>(API.auth.register, data).pipe(
       tap(response => {
         if (this.isBrowser) {
-          localStorage.setItem('token', response.Authorization);
+          const raw = response.Authorization ?? '';
+          const token = raw.replace(/^Bearer\s+/i, '');
+          localStorage.setItem('token', token);
         }
       }),
       switchMap(() => this.http.get<User>(API.users.me)),
