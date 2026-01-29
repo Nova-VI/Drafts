@@ -88,24 +88,55 @@ export class AuthService {
     }
     return null;
   }
+  isTokenValid(token: string): boolean {
+  if (!token) return false;
 
-  private checkStoredAuth(): void {
-    if (!this.isBrowser) {
-      return;
-    }
+  try {
+    // JWT has 3 parts: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+
+    // Decode the payload
+    const payload = JSON.parse(atob(parts[1]));
     
-    const token = localStorage.getItem('token');
-    
-    if (token) {
-      this.http.get<User>(API.users.me, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).subscribe({
-        next: user => this.currentUserSignal.set(user),
-        error: () => {
-          localStorage.removeItem('token');
-          this.currentUserSignal.set(null);
-        }
-      });
+    // Check if token is expired
+    if (payload.exp) {
+      const expiration = payload.exp * 1000; // exp is in seconds
+      const now = Date.now();
+      
+      if (now >= expiration) {
+        console.warn('Token expired');
+        return false;
+      }
     }
+
+    return true;
+  } catch (error) {
+    console.error('Invalid token format:', error);
+    return false;
   }
+}
+  private checkStoredAuth(): void {
+  if (!this.isBrowser) {
+    return;
+  }
+  
+  const token = localStorage.getItem('token');
+  console.log('[checkStoredAuth] Token exists:', !!token);
+  
+  if (token) {
+    // Interceptor automatically adds Authorization header
+    this.http.get<User>(API.users.me).subscribe({
+      next: user => {
+        console.log('[checkStoredAuth] Success - user loaded:', user.username);
+        this.currentUserSignal.set(user);
+      },
+      error: (err) => {
+        console.error('[checkStoredAuth] ERROR - clearing token:', err.status);
+        localStorage.removeItem('token');
+        this.currentUserSignal.set(null);
+      }
+    });
+  }
+}
 }

@@ -47,27 +47,27 @@ export class ProfileComponent {
   }
 
   onSave(): void {
-    if (!this.canSave()) return;
+  if (!this.canSave()) return;
 
-    this.isLoading.set(true);
-    this.errorMessage.set('');
+  this.isLoading.set(true);
+  this.errorMessage.set('');
 
-    const updates = this.profileForm.getRawValue();
+  const updates = this.profileForm.getRawValue();
 
-    this.http.patch<User>(API.users.updateMe, updates, {
-      headers: { Authorization: `Bearer ${this.authService.getToken()}` }
-    }).subscribe({
-      next: (updatedUser) => {
-        this.authService.updateUser(updatedUser);
-        this.isEditing.set(false);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        this.errorMessage.set(err.error?.message || 'Failed to update profile');
-        this.isLoading.set(false);
-      }
-    });
-  }
+  // Interceptor automatically adds Authorization header
+  this.http.patch<User>(API.users.updateMe, updates).subscribe({
+    next: (updatedUser) => {
+      this.authService.updateUser(updatedUser);
+      this.isEditing.set(false);
+      this.isLoading.set(false);
+    },
+    error: (err) => {
+      // errorInterceptor now provides clean error.message
+      this.errorMessage.set(err.message || 'Failed to update profile');
+      this.isLoading.set(false);
+    }
+  });
+}
 
   onCancel() {
     this.isEditing.set(false);
