@@ -64,7 +64,23 @@ export class ArticleDetailPage {
     const confirmFn = (globalThis as any)?.confirm as ((message: string) => boolean) | undefined;
     if (confirmFn && !confirmFn('Delete this article?')) return;
 
-    this.store.deleteArticle(a.id);
-    this.router.navigate(['/articles']);
+    const success = this.store.deleteArticle(a.id);
+    if (success) {
+      this.router.navigate(['/articles']);
+    }
+  }
+
+  deleteComment(commentId: string) {
+    const a = this.article();
+    if (!a) return;
+
+    const confirmFn = (globalThis as any)?.confirm as ((message: string) => boolean) | undefined;
+    if (confirmFn && !confirmFn('Delete this comment?')) return;
+
+    this.store.deleteComment(commentId, a.id);
+  }
+
+  canDelete(item: any): boolean {
+    return this.store.canDelete(item);
   }
 }

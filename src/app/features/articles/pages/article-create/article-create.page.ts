@@ -51,11 +51,17 @@ export class ArticleCreatePage {
 
     this.submitting.set(true);
 
-    const id = this.store.addArticle({
+    this.store.addArticle({
       title: this.title().trim(),
       content: this.content().trim(),
-    });
-
-    this.router.navigate(['/articles', id]);
+    })
+      .then(id => {
+        this.submitting.set(false);
+        this.router.navigate(['/articles', id]);
+      })
+      .catch(error => {
+        console.error('Failed to create article:', error);
+        this.submitting.set(false);
+      });
   }
 }

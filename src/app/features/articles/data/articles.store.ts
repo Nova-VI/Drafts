@@ -1,287 +1,47 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { tap, map, switchMap, catchError } from 'rxjs/operators';
+import { of, throwError } from 'rxjs';
 import type { Article } from '../../../shared/models/article.model';
 import type { Vote, Voter } from '../../../shared/models/voter.model';
+import { API } from '../../../core/api/api.endpoints';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class ArticlesStore {
-  private readonly items = signal<Article[]>([
-    {
-      id: 'a1',
-      fatherId: null,
-      title: 'Drafts: a modern blog platform',
-      content:
-        "lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-      images: [],
-      owner: 'demo-user',
-      comments: [
-        {
-          id: 'c1',
-          fatherId: 'a1',
-          title: '',
-          content: 'It looks fine. Clean enough. None of it will matter.',
-          images: [],
-          owner: 'reader-1',
-          comments: [],
-          upvotes: 2,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:30:00.000Z',
-          updatedAt: '2026-01-28T10:30:00.000Z',
-        },
-        {
-          id: 'c2',
-          fatherId: 'a1',
-          title: '',
-          content: 'Changing the API paths will eventually break something anyway.',
-          images: [],
-          owner: 'reader-2',
-          comments: [],
-          upvotes: 5,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:33:00.000Z',
-          updatedAt: '2026-01-28T10:33:00.000Z',
-        },
-        {
-          id: 'c3',
-          fatherId: 'a1',
-          title: '',
-          content: 'Buttons above or below, the content stays the same and is forgotten.',
-          images: [],
-          owner: 'reader-3',
-          comments: [],
-          upvotes: 1,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:35:00.000Z',
-          updatedAt: '2026-01-28T10:35:00.000Z',
-        },
-        {
-          id: 'c4',
-          fatherId: 'a1',
-          title: '',
-          content: 'Long text wraps. Meaning does not.',
-          images: [],
-          owner: 'reader-4',
-          comments: [],
-          upvotes: 0,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:37:00.000Z',
-          updatedAt: '2026-01-28T10:37:00.000Z',
-        },
-        {
-          id: 'c5',
-          fatherId: 'a1',
-          title: '',
-          content: 'Small commits, big commits. The repository still decays.',
-          images: [],
-          owner: 'reader-5',
-          comments: [],
-          upvotes: 3,
-          downvotes: 1,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:38:00.000Z',
-          updatedAt: '2026-01-28T10:38:00.000Z',
-        },
-        {
-          id: 'c6',
-          fatherId: 'a1',
-          title: '',
-          content: 'More items. Same emptiness.',
-          images: [],
-          owner: 'reader-6',
-          comments: [],
-          upvotes: 0,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:39:00.000Z',
-          updatedAt: '2026-01-28T10:39:00.000Z',
-        },
-        {
-          id: 'c7',
-          fatherId: 'a1',
-          title: '',
-          content: 'Scrolling reveals nothing new.',
-          images: [],
-          owner: 'reader-7',
-          comments: [],
-          upvotes: 1,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:40:00.000Z',
-          updatedAt: '2026-01-28T10:40:00.000Z',
-        },
-        {
-          id: 'c8',
-          fatherId: 'a1',
-          title: '',
-          content: 'It will render on mobile. It will still be ignored.',
-          images: [],
-          owner: 'reader-8',
-          comments: [],
-          upvotes: 4,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:41:00.000Z',
-          updatedAt: '2026-01-28T10:41:00.000Z',
-        },
-        {
-          id: 'c9',
-          fatherId: 'a1',
-          title: '',
-          content: 'State layers come and go. Complexity remains.',
-          images: [],
-          owner: 'reader-9',
-          comments: [],
-          upvotes: 2,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:42:00.000Z',
-          updatedAt: '2026-01-28T10:42:00.000Z',
-        },
-        {
-          id: 'c10',
-          fatherId: 'a1',
-          title: '',
-          content: 'Endless scrolling toward nothing.',
-          images: [],
-          owner: 'reader-10',
-          comments: [],
-          upvotes: 0,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:43:00.000Z',
-          updatedAt: '2026-01-28T10:43:00.000Z',
-        },
-        {
-          id: 'c11',
-          fatherId: 'a1',
-          title: '',
-          content: 'Another comment. Same void.',
-          images: [],
-          owner: 'reader-11',
-          comments: [],
-          upvotes: 1,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:44:00.000Z',
-          updatedAt: '2026-01-28T10:44:00.000Z',
-        },
-        {
-          id: 'c12',
-          fatherId: 'a1',
-          title: '',
-          content: 'Compact, readable, ultimately irrelevant.',
-          images: [],
-          owner: 'reader-12',
-          comments: [],
-          upvotes: 0,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:45:00.000Z',
-          updatedAt: '2026-01-28T10:45:00.000Z',
-        },
-        {
-          id: 'c13',
-          fatherId: 'a1',
-          title: '',
-          content: 'Almost there. There is nowhere to arrive.',
-          images: [],
-          owner: 'reader-13',
-          comments: [],
-          upvotes: 2,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:46:00.000Z',
-          updatedAt: '2026-01-28T10:46:00.000Z',
-        },
-        {
-          id: 'c14',
-          fatherId: 'a1',
-          title: '',
-          content: 'Borders align. Purpose does not.',
-          images: [],
-          owner: 'reader-14',
-          comments: [],
-          upvotes: 0,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:47:00.000Z',
-          updatedAt: '2026-01-28T10:47:00.000Z',
-        },
-        {
-          id: 'c15',
-          fatherId: 'a1',
-          title: '',
-          content: 'The final comment changes nothing.',
-          images: [],
-          owner: 'reader-15',
-          comments: [],
-          upvotes: 1,
-          downvotes: 0,
-          voters: [],
-          slug: null,
-          createdAt: '2026-01-28T10:48:00.000Z',
-          updatedAt: '2026-01-28T10:48:00.000Z',
-        },
-      ],
-      upvotes: 12,
-      downvotes: 1,
-      voters: [],
-      slug: 'drafts-a-modern-blog-platform',
-      createdAt: '2026-01-28T10:00:00.000Z',
-      updatedAt: '2026-01-28T10:00:00.000Z',
-    },
-    {
-      id: 'a2',
-      fatherId: null,
-      title: 'Design system first, features second',
-      content:
-        'How a small set of primitives helps three developers ship in parallel without conflicts. Build the layout and components first, then wire APIs.',
-      images: [],
-      owner: 'demo-user',
-      comments: [],
-      upvotes: 5,
-      downvotes: 0,
-      voters: [],
-      slug: 'design-system-first-features-second',
-      createdAt: '2026-01-27T16:20:00.000Z',
-      updatedAt: '2026-01-27T16:20:00.000Z',
-    },
-    {
-      id: 'a3',
-      fatherId: null,
-      title: 'API Endpoints',
-      content:
-        'API endpoints are served by a Node.js backend using Express. The database is Postgres, API routes are RESTful and secured with JWT tokens.',
-      images: [],
-      owner: 'backend-team',
-      comments: [],
-      upvotes: 9,
-      downvotes: 2,
-      voters: [],
-      slug: 'api-endpoints',
-      createdAt: '2026-01-26T09:15:00.000Z',
-      updatedAt: '2026-01-26T09:15:00.000Z',
-    },
-  ]);
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+
+  private readonly isLoading = signal<boolean>(true);
+  private readonly error = signal<string | null>(null);
+  private readonly items = signal<Article[]>([]);
 
   readonly articles = this.items.asReadonly();
+  readonly isLoading$ = this.isLoading.asReadonly();
+  readonly error$ = this.error.asReadonly();
+
+  constructor() {
+    this.loadArticles();
+  }
+
+  private loadArticles(): void {
+    this.http.get<Article[]>(API.articles.listFull)
+      .pipe(
+        tap(articles => {
+          this.items.set(articles);
+          this.isLoading.set(false);
+          this.error.set(null);
+        })
+      )
+      .subscribe({
+        error: (err) => {
+          console.error('Failed to load articles:', err);
+          this.error.set(err.error?.message || 'Failed to load articles');
+          this.isLoading.set(false);
+        }
+      });
+  }
 
   getById(id: string): Article | undefined {
     return this.items().find((a) => a.id === id);
@@ -381,19 +141,37 @@ export class ArticlesStore {
   }
 
   isUpvoted(article: Article): boolean {
-    return this.myVoteOn(article) === 'upvote';
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) return false;
+    return article.voters.find(v => v.voterId === currentUserId)?.vote === 'upvote';
   }
 
   isDownvoted(article: Article): boolean {
-    return this.myVoteOn(article) === 'downvote';
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) return false;
+    return article.voters.find(v => v.voterId === currentUserId)?.vote === 'downvote';
+  }
+
+  canEdit(article: Article): boolean {
+    const currentUserId = this.authService.currentUser()?.id;
+    return !!currentUserId && article.owner === currentUserId;
+  }
+
+  canDelete(article: Article): boolean {
+    return this.canEdit(article);
   }
 
   upvote(articleId: string) {
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) return;
+
+    const previousState = this.items();
+    
+    // Optimistic update
     this.items.update((list) =>
       this.updateTree(list, articleId, (a) => {
-        const me = this.currentVoterId();
-        const prev = this.myVoteOn(a);
-        const voters: Voter[] = a.voters.filter((v) => v.voterId !== me);
+        const voters: Voter[] = a.voters.filter((v) => v.voterId !== currentUserId);
+        const prev = a.voters.find((v) => v.voterId === currentUserId)?.vote ?? 'null';
 
         if (prev === 'upvote') {
           return {
@@ -403,7 +181,7 @@ export class ArticlesStore {
           };
         }
 
-        voters.push({ voterId: me, vote: 'upvote' });
+        voters.push({ voterId: currentUserId, vote: 'upvote' });
         return {
           ...a,
           upvotes: a.upvotes + 1,
@@ -412,14 +190,40 @@ export class ArticlesStore {
         };
       })
     );
+
+    // Send to server
+    this.http.post<any>(API.articles.upvote(articleId), {})
+      .subscribe({
+        next: (response) => {
+          // Update with server response
+          this.items.update((list) =>
+            this.updateTree(list, articleId, (a) => ({
+              ...a,
+              upvotes: response.upvotes,
+              downvotes: response.downvotes,
+              voters: response.voters,
+            }))
+          );
+        },
+        error: (err) => {
+          console.error('Failed to upvote:', err);
+          // Revert on error
+          this.items.set(previousState);
+        }
+      });
   }
 
   downvote(articleId: string) {
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) return;
+
+    const previousState = this.items();
+    
+    // Optimistic update
     this.items.update((list) =>
       this.updateTree(list, articleId, (a) => {
-        const me = this.currentVoterId();
-        const prev = this.myVoteOn(a);
-        const voters: Voter[] = a.voters.filter((v) => v.voterId !== me);
+        const voters: Voter[] = a.voters.filter((v) => v.voterId !== currentUserId);
+        const prev = a.voters.find((v) => v.voterId === currentUserId)?.vote ?? 'null';
 
         if (prev === 'downvote') {
           return {
@@ -429,7 +233,7 @@ export class ArticlesStore {
           };
         }
 
-        voters.push({ voterId: me, vote: 'downvote' });
+        voters.push({ voterId: currentUserId, vote: 'downvote' });
         return {
           ...a,
           downvotes: a.downvotes + 1,
@@ -438,67 +242,198 @@ export class ArticlesStore {
         };
       })
     );
+
+    // Send to server
+    this.http.post<any>(API.articles.downvote(articleId), {})
+      .subscribe({
+        next: (response) => {
+          // Update with server response
+          this.items.update((list) =>
+            this.updateTree(list, articleId, (a) => ({
+              ...a,
+              upvotes: response.upvotes,
+              downvotes: response.downvotes,
+              voters: response.voters,
+            }))
+          );
+        },
+        error: (err) => {
+          console.error('Failed to downvote:', err);
+          // Revert on error
+          this.items.set(previousState);
+        }
+      });
   }
 
-  addArticle(input: { title: string; content: string; images?: string[]; slug?: string | null }): string {
-    const now = this.nowIso();
-    const title = input.title.trim();
-    const content = input.content.trim();
-    const id = this.newId('a');
+  addArticle(input: { title: string; content: string; images?: string[]; slug?: string | null }): Promise<string> {
+    const formData = new FormData();
+    formData.append('title', input.title.trim());
+    formData.append('content', input.content.trim());
+    if (input.slug) {
+      formData.append('slug', input.slug);
+    }
+    if (input.images && input.images.length > 0) {
+      input.images.forEach(img => {
+        formData.append('images', img);
+      });
+    }
 
-    const derivedSlug = (input.slug ?? null) ?? (title ? this.slugify(title) : null);
-
-    const article: Article = {
-      id,
-      fatherId: null,
-      title,
-      content,
-      images: input.images ?? [],
-      owner: this.currentUserLabel(),
-      comments: [],
-      upvotes: 0,
-      downvotes: 0,
-      voters: [],
-      slug: derivedSlug && derivedSlug.length > 0 ? derivedSlug : null,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.items.update((list) => [article, ...list]);
-    return id;
+    return new Promise((resolve, reject) => {
+      this.http.post<{ id: string }>(API.articles.create, formData)
+        .subscribe({
+          next: (response) => {
+            this.loadArticles();
+            resolve(response.id);
+          },
+          error: (err) => {
+            console.error('Failed to create article:', err);
+            reject(err);
+          }
+        });
+    });
   }
 
-  deleteArticle(articleId: string) {
+  deleteArticle(articleId: string): boolean {
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) {
+      console.error('Must be logged in to delete articles');
+      return false;
+    }
+
+    const article = this.getById(articleId);
+    if (!article) {
+      console.error('Article not found');
+      return false;
+    }
+
+    if (article.owner !== currentUserId) {
+      console.error('You can only delete your own articles');
+      return false;
+    }
+
+    const previousState = this.items();
+
+    // Optimistic delete
     this.items.update((list) => this.removeFromTree(list, articleId));
+
+    this.http.delete<any>(API.articles.delete(articleId))
+      .subscribe({
+        next: () => {
+          console.log('Article deleted successfully');
+        },
+        error: (err) => {
+          console.error('Failed to delete article:', err);
+          // Revert on error
+          this.items.set(previousState);
+        }
+      });
+
+    return true;
   }
 
   addReply(parentId: string, content: string) {
     const text = content.trim();
     if (!text) return;
 
-    const now = this.nowIso();
-    const reply: Article = {
-      id: this.newId('c'),
-      fatherId: parentId,
-      title: '',
-      content: text,
-      images: [],
-      owner: this.currentUserLabel(),
-      comments: [],
-      upvotes: 0,
-      downvotes: 0,
-      voters: [],
-      slug: null,
-      createdAt: now,
-      updatedAt: now,
-    };
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) {
+      console.error('Must be logged in to add comments');
+      return;
+    }
 
+    // Generate a title for the comment (first 50 chars or "Comment")
+    const title = text.substring(0, 50) + (text.length > 50 ? '...' : '');
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('content', text);
+    formData.append('fatherId', parentId);
+
+    this.http.post<Article>(API.articles.create, formData)
+      .subscribe({
+        next: (reply) => {
+          this.items.update((list) =>
+            this.updateTree(list, parentId, (a) => ({
+              ...a,
+              comments: [...a.comments, reply],
+              updatedAt: new Date().toISOString(),
+            }))
+          );
+        },
+        error: (err) => {
+          console.error('Failed to add reply:', err);
+          if (err.status === 401) {
+            console.error('Unauthorized: Please log in to comment');
+          }
+        }
+      });
+  }
+
+  deleteComment(commentId: string, parentId: string): boolean {
+    const currentUserId = this.authService.currentUser()?.id;
+    if (!currentUserId) {
+      console.error('Must be logged in to delete comments');
+      return false;
+    }
+
+    const comment = this.getById(commentId);
+    if (!comment) {
+      console.error('Comment not found');
+      return false;
+    }
+
+    if (comment.owner !== currentUserId) {
+      console.error('You can only delete your own comments');
+      return false;
+    }
+
+    const previousState = this.items();
+
+    // Optimistic delete
     this.items.update((list) =>
-      this.updateTree(list, parentId, (a) => ({
-        ...a,
-        comments: [...a.comments, reply],
-        updatedAt: now,
+      this.updateTree(list, parentId, (parent) => ({
+        ...parent,
+        comments: parent.comments.filter(c => c.id !== commentId),
+        updatedAt: new Date().toISOString(),
       }))
     );
+
+    this.http.delete<any>(API.articles.delete(commentId))
+      .subscribe({
+        next: () => {
+          console.log('Comment deleted successfully');
+        },
+        error: (err) => {
+          console.error('Failed to delete comment:', err);
+          // Revert on error
+          this.items.set(previousState);
+        }
+      });
+
+    return true;
   }
+
+  private updateArticle(articleId: string, updates: Partial<Article>) {
+    const formData = new FormData();
+    if (updates.title) {
+      formData.append('title', updates.title);
+    }
+    if (updates.content) {
+      formData.append('content', updates.content);
+    }
+    if (updates.slug) {
+      formData.append('slug', updates.slug);
+    }
+
+    this.http.patch<Article>(API.articles.update(articleId), formData)
+      .subscribe({
+        next: (updated) => {
+          this.items.update((list) =>
+            this.updateTree(list, articleId, () => updated)
+          );
+        },
+        error: (err) => console.error('Failed to update article:', err)
+      });
+  }
+
 }
