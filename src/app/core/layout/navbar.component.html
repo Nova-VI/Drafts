@@ -11,10 +11,10 @@
       <li><a routerLink="/notifications" (click)="isMobileMenuOpen && toggleMobileMenu()">Notifications</a></li>
       <li><a routerLink="/profile" (click)="isMobileMenuOpen && toggleMobileMenu()">Profile</a></li>
       <li class="auth-item">
-        <a *ngIf="!auth.isAuthenticated()" routerLink="/auth/signin" (click)="isMobileMenuOpen && toggleMobileMenu()">Sign in</a>
+        <a *ngIf="!auth.isAuthenticated()" routerLink="/auth/signin" class="btn sign-in" (click)="isMobileMenuOpen && toggleMobileMenu()">Sign in</a>
         <div *ngIf="auth.isAuthenticated()" class="auth-user">
           <span class="auth-username">{{ auth.userName() }}</span>
-          <button class="btn" (click)="signOut(); isMobileMenuOpen && toggleMobileMenu()">Sign out</button>
+          <button class="btn sign-out" (click)="signOut(); isMobileMenuOpen && toggleMobileMenu()">Sign out</button>
         </div>
       </li>
     </ul>
