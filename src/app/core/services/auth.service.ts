@@ -3,7 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError } from 'rxjs';
+import { Observable, tap, catchError, throwError, switchMap } from 'rxjs';
 import { API } from '../api/api.endpoints';
 import { User, LoginRequest, RegisterRequest, AuthResponse } from '../models/user.model';
 
@@ -34,15 +34,21 @@ export class AuthService {
     this.checkStoredAuth();
   }
 
-  login(credentials: LoginRequest): Observable<AuthResponse> {
+  login(credentials: LoginRequest): Observable<User> {
     this.isLoadingSignal.set(true);
     
     return this.http.post<AuthResponse>(API.auth.login, credentials).pipe(
       tap(response => {
         if (this.isBrowser) {
-          localStorage.setItem('token', response.token);
+          localStorage.setItem('token', response.Authorization);
         }
-        this.currentUserSignal.set(response.user);
+      }),
+      switchMap(() => this.http.get<User>(API.users.me)),
+      tap(user => {
+        this.currentUserSignal.set(user);
+        if (this.isBrowser) {
+          localStorage.setItem('user', JSON.stringify(user));
+        }
         this.isLoadingSignal.set(false);
       }),
       catchError(error => {
@@ -52,15 +58,21 @@ export class AuthService {
     );
   }
 
-  register(data: RegisterRequest): Observable<AuthResponse> {
+  register(data: RegisterRequest): Observable<User> {
     this.isLoadingSignal.set(true);
     
     return this.http.post<AuthResponse>(API.auth.register, data).pipe(
       tap(response => {
         if (this.isBrowser) {
-          localStorage.setItem('token', response.token);
+          localStorage.setItem('token', response.Authorization);
         }
-        this.currentUserSignal.set(response.user);
+      }),
+      switchMap(() => this.http.get<User>(API.users.me)),
+      tap(user => {
+        this.currentUserSignal.set(user);
+        if (this.isBrowser) {
+          localStorage.setItem('user', JSON.stringify(user));
+        }
         this.isLoadingSignal.set(false);
       }),
       catchError(error => {
@@ -73,6 +85,7 @@ export class AuthService {
   logout(): void {
     if (this.isBrowser) {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
     }
     this.currentUserSignal.set(null);
     this.router.navigate(['/auth/signin']);
@@ -117,26 +130,41 @@ export class AuthService {
   }
 }
   private checkStoredAuth(): void {
-  if (!this.isBrowser) {
-    return;
-  }
-  
-  const token = localStorage.getItem('token');
-  console.log('[checkStoredAuth] Token exists:', !!token);
-  
-  if (token) {
-    // Interceptor automatically adds Authorization header
-    this.http.get<User>(API.users.me).subscribe({
-      next: user => {
-        console.log('[checkStoredAuth] Success - user loaded:', user.username);
+    if (!this.isBrowser) {
+      return;
+    }
+    
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    console.log('[checkStoredAuth] Token exists:', !!token);
+    
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
         this.currentUserSignal.set(user);
-      },
-      error: (err) => {
-        console.error('[checkStoredAuth] ERROR - clearing token:', err.status);
-        localStorage.removeItem('token');
-        this.currentUserSignal.set(null);
+        console.log('[checkStoredAuth] User loaded from storage:', user.username);
+      } catch (error) {
+        console.error('[checkStoredAuth] Failed to parse stored user:', error);
+        localStorage.removeItem('user');
       }
-    });
+    }
+    
+    if (token) {
+      // Verify token is still valid by fetching fresh user data
+      this.http.get<User>(API.users.me).subscribe({
+        next: user => {
+          console.log('[checkStoredAuth] Success - user refreshed:', user.username);
+          this.currentUserSignal.set(user);
+          localStorage.setItem('user', JSON.stringify(user));
+        },
+        error: (err) => {
+          console.error('[checkStoredAuth] ERROR - clearing token:', err.status);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          this.currentUserSignal.set(null);
+        }
+      });
+    }
   }
-}
 }
