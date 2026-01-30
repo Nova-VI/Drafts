@@ -1,5 +1,5 @@
 <div class="profile-container">
-  @if (currentUser(); as user) {
+  @if (profileUser(); as user) {
     <div class="profile-card">
       @if (successMessage()) {
         <div class="success-toast">{{ successMessage() }}</div>
@@ -16,7 +16,7 @@
         <!-- VIEW MODE -->
         <div class="profile-about">
           <h3 class="about-heading">About Me</h3>
-          <p class="about-text">{{ user.bio || 'No bio yet. Click edit to add one!' }}</p>
+          <p class="about-text">{{ user.bio || 'No bio yet.' }}</p>
         </div>
         
         @if (user.name || user.lastName) {
@@ -26,9 +26,11 @@
           </div>
         }
         
-        <button class="btn btn-primary" (click)="toggleEditMode()">
-          Edit Profile
-        </button>
+        @if (isOwnProfile()) {
+          <button class="btn btn-primary" (click)="toggleEditMode()">
+            Edit Profile
+          </button>
+        }
       } @else {
         <!-- EDIT MODE -->
         <form [formGroup]="profileForm" (ngSubmit)="onSave()">
@@ -66,7 +68,7 @@
               maxlength="200"
             ></textarea>
             <span class="char-count">
-              {{ profileForm.controls.bio.value?.length || 0 }} / 200
+              {{ profileForm.controls.bio.value.length || 0 }} / 200
             </span>
           </div>
 

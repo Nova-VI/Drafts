@@ -18,7 +18,7 @@
     <article class="card detail">
       <div class="articleHeader">
         <div class="meta">
-          <span class="author">{{ article()!.ownerUsername }}</span>
+          <a [routerLink]="['/profile', article()!.ownerUsername]" class="author authorLink">{{ article()!.ownerUsername }}</a>
           <span class="dot">•</span>
           <time class="date">{{ article()!.createdAt | relativeTime }}</time>
         </div>
@@ -192,7 +192,7 @@
               <article class="comment" role="listitem">
                 <div class="commentHeader">
                   <div class="commentMeta">
-                    <span class="author">{{ c.ownerUsername }}</span>
+                      <a [routerLink]="['/profile', c.ownerUsername]" class="author authorLink">{{ c.ownerUsername }}</a>
                     <span class="dot">•</span>
                     <time class="date">{{ c.createdAt | relativeTime }}</time>
                   </div>
@@ -337,7 +337,7 @@
                         <article class="comment reply" role="listitem">
                           <div class="commentHeader">
                             <div class="commentMeta">
-                              <span class="author">{{ reply.ownerUsername }}</span>
+                              <a [routerLink]="['/profile', reply.ownerUsername]" class="author authorLink">{{ reply.ownerUsername }}</a>
                               <span class="dot">•</span>
                               <time class="date">{{ reply.createdAt | relativeTime }}</time>
                             </div>

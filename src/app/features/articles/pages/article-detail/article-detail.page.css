@@ -460,6 +460,20 @@
   margin-bottom: 10px;
 }
 
+.author {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.authorLink {
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.authorLink:hover {
+  color: var(--brand);
+}
+
 .dot {
   opacity: 0.6;
 }

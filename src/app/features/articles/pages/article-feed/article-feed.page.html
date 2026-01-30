@@ -34,7 +34,7 @@
         <article class="row card">
           <section class="content">
             <div class="meta">
-              <span class="author">{{ a.ownerUsername }}</span>
+              <a [routerLink]="['/profile', a.ownerUsername]" class="author authorLink">{{ a.ownerUsername }}</a>
               <span class="dot">•</span>
               <time class="date">{{ a.createdAt | relativeTime }}</time>
               <span class="dot">•</span>
