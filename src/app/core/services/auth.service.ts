@@ -38,17 +38,21 @@ export class AuthService {
     Promise.resolve().then(() => this.checkStoredAuth());
   }
 
+  private extractToken(response: AuthResponse): string | null {
+    const token = response.accessToken?.trim();
+    return token?.length ? token : null;
+  }
+
   login(credentials: LoginRequest): Observable<User> {
     this.isLoadingSignal.set(true);
     
     return this.http.post<AuthResponse>(API.auth.login, credentials).pipe(
       tap(response => {
         if (this.isBrowser) {
-          // Some backends return 'Authorization' with the 'Bearer ' prefix.
-          // Normalize and store only the raw token value.
-          const raw = response.Authorization ?? '';
-          const token = raw.replace(/^Bearer\s+/i, '');
-          localStorage.setItem('token', token);
+          const token = this.extractToken(response);
+          if (token) {
+            localStorage.setItem('token', token);
+          }
         }
       }),
       switchMap(() => this.http.get<User>(API.users.me)),
@@ -72,9 +76,10 @@ export class AuthService {
     return this.http.post<AuthResponse>(API.auth.register, data).pipe(
       tap(response => {
         if (this.isBrowser) {
-          const raw = response.Authorization ?? '';
-          const token = raw.replace(/^Bearer\s+/i, '');
-          localStorage.setItem('token', token);
+          const token = this.extractToken(response);
+          if (token) {
+            localStorage.setItem('token', token);
+          }
         }
       }),
       switchMap(() => this.http.get<User>(API.users.me)),

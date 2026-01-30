@@ -8,9 +8,9 @@ const base = environment.apiBaseUrl.replace(/\/$/, '');
  */
 export const API = {
   auth: {
-    /** POST: { email, password } -> returns { Authorization: string } */
+    /** POST: { email, password } -> returns { accessToken: string, userId: string, email: string } */
     login: `${base}/auth/login`,
-    /** POST: { email, password, username, name?, lastName?, bio? } -> returns { Authorization: string } */
+    /** POST: { email, password, username, name?, lastName?, bio? } -> returns { accessToken: string, userId: string, email: string } */
     register: `${base}/auth/register`,
   },
 
