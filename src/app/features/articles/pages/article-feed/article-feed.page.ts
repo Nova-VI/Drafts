@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import type { Article } from '../../../../shared/models/article.model';
@@ -14,6 +14,28 @@ import { AuthService } from '../../../../core/services/auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArticleFeedPage {
+  // dropdown state for quick-date selector
+  readonly relativeOptions = [
+    { value: '', label: 'All dates' },
+    { value: 'last_hour', label: 'Last hour' },
+    { value: 'today', label: 'Today' },
+    { value: 'last_24h', label: 'Last 24 hours' },
+    { value: 'last_week', label: 'Last week' },
+    { value: 'last_month', label: 'Last month' },
+  ];
+  readonly relativeOpen = signal(false);
+  readonly selectedRelative = signal('All dates');
+
+  private _docClickHandler = (e: Event) => {
+    try {
+      const root = document.querySelector('.relative-dropdown');
+      if (!root) return;
+      if (root.contains(e.target as Node)) return;
+      this.relativeOpen.set(false);
+    } catch {
+      /* ignore */
+    }
+  };
   readonly store = inject(ArticlesStore);
   readonly authService = inject(AuthService);
 
@@ -166,5 +188,15 @@ export class ArticleFeedPage {
     this.setSince(value);
     // eslint-disable-next-line no-console
     console.log('Search setSinceRelative:', range, value);
+    const opt = this.relativeOptions.find(o => o.value === range);
+    this.selectedRelative.set(opt ? opt.label : 'All dates');
+  }
+
+  toggleRelativeOpen() {
+    this.relativeOpen.update(v => !v);
+  }
+
+  ngOnDestroy(): void {
+    try { document.removeEventListener('click', this._docClickHandler, { capture: true } as any); } catch {}
   }
 }

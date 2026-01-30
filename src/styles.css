@@ -139,6 +139,71 @@ a:hover {
 	box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand) 18%, transparent);
 }
 
+/* Tidy native select to match dark theme and stay compact */
+select.input {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	cursor: pointer;
+	padding: 8px 36px 8px 12px; /* room for caret */
+	height: 36px;
+	min-height: 36px;
+	background: linear-gradient(180deg, var(--surface-2), var(--surface));
+	color: var(--text);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	font-size: 14px;
+	line-height: 1;
+	background-image: linear-gradient(45deg, transparent 50%, var(--text) 50%), linear-gradient(135deg, var(--text) 50%, transparent 50%);
+	background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 13px) calc(50% - 2px);
+	background-size: 6px 6px, 6px 6px;
+	background-repeat: no-repeat;
+}
+
+select.input:focus {
+	border-color: color-mix(in oklab, var(--brand) 50%, var(--border));
+	box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand) 12%, transparent);
+}
+
+select.input option {
+	background: var(--surface);
+	color: var(--text);
+}
+
+/* Minimal custom dropdown styles used for the quick-date selector */
+.relative-dropdown { position: relative; display: inline-block; }
+.relative-dropdown .relative-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	height: 36px;
+	min-width: 140px;
+	border-radius: var(--radius-sm);
+	background: linear-gradient(180deg, var(--surface-2), var(--surface));
+	border: 1px solid var(--border);
+	color: var(--text);
+	cursor: pointer;
+}
+.relative-dropdown .relative-btn .caret { margin-left: 8px; opacity: 0.9 }
+.relative-dropdown .relative-menu {
+	position: absolute;
+	right: 0;
+	top: calc(100% + 8px);
+	width: 180px;
+	margin: 0;
+	padding: 6px 0;
+	list-style: none;
+	border-radius: 10px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+	z-index: 1200;
+}
+.relative-dropdown .relative-item { padding: 8px 12px; color: var(--text); cursor: pointer }
+.relative-dropdown .relative-item + .relative-item { border-top: 1px solid rgba(255,255,255,0.03) }
+.relative-dropdown .relative-item:hover { background: rgba(255,255,255,0.02) }
+
 .btn {
 	display: inline-flex;
 	align-items: center;

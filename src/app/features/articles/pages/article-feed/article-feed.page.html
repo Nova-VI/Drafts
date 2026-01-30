@@ -33,14 +33,16 @@
           aria-label="Filter by author"
         />
 
-        <select class="input" aria-label="Quick date" (change)="setSinceRelative($any($event.target).value)">
-          <option value="">All dates</option>
-          <option value="last_hour">Last hour</option>
-          <option value="today">Today</option>
-          <option value="last_24h">Last 24 hours</option>
-          <option value="last_week">Last week</option>
-          <option value="last_month">Last month</option>
-        </select>
+        <div class="relative-dropdown">
+          <button type="button" class="relative-btn" (click)="toggleRelativeOpen()" aria-haspopup="listbox" [attr.aria-expanded]="relativeOpen()">
+            {{ selectedRelative() }} <span class="caret">▾</span>
+          </button>
+          @if (relativeOpen()) {
+            <ul class="relative-menu" role="listbox">
+              <li *ngFor="let opt of relativeOptions" class="relative-item" role="option" (click)="setSinceRelative(opt.value); toggleRelativeOpen()">{{ opt.label }}</li>
+            </ul>
+          }
+        </div>
       </div>
     </div>
   </header>
