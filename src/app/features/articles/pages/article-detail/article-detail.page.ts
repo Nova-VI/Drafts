@@ -1,21 +1,28 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { map } from 'rxjs/operators';
 import { ArticlesStore } from '../../data/articles.store';
+import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
+import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal.component';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'drafts-article-detail-page',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, RelativeTimePipe, ConfirmModalComponent],
   templateUrl: './article-detail.page.html',
   styleUrl: './article-detail.page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ArticleDetailPage {
+export class ArticleDetailPage implements AfterViewInit {
   readonly store = inject(ArticlesStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  readonly authService = inject(AuthService);
+
+  readonly confirmModal = viewChild<ConfirmModalComponent>('confirmModal');
+  @ViewChild('commentTextarea') commentTextarea?: ElementRef<HTMLTextAreaElement>;
 
   readonly newCommentText = signal('');
   readonly newCommentImages = signal<File[]>([]);
@@ -36,6 +43,17 @@ export class ArticleDetailPage {
   });
 
   readonly lightboxImage = signal<string | null>(null);
+
+  ngAfterViewInit() {
+    // Check if we should autofocus on comment field
+    this.route.fragment.subscribe(fragment => {
+      if (fragment === 'comments') {
+        setTimeout(() => {
+          this.commentTextarea?.nativeElement.focus();
+        }, 100);
+      }
+    });
+  }
 
   commentCount(): number {
     const a = this.article();
@@ -206,12 +224,19 @@ export class ArticleDetailPage {
     const a = this.article();
     if (!a) return;
 
-    const confirmFn = (globalThis as any)?.confirm as ((message: string) => boolean) | undefined;
-    if (confirmFn && !confirmFn('Delete this article?')) return;
-
-    const success = this.store.deleteArticle(a.id);
-    if (success) {
-      this.router.navigate(['/articles']);
+    const modal = this.confirmModal();
+    if (modal) {
+      modal.open({
+        title: 'Delete Article',
+        message: 'Are you sure you want to delete this article? This action cannot be undone.',
+        confirmText: 'Delete'
+      });
+      modal.confirmed.subscribe(() => {
+        const success = this.store.deleteArticle(a.id);
+        if (success) {
+          this.router.navigate(['/articles']);
+        }
+      });
     }
   }
 
@@ -219,10 +244,17 @@ export class ArticleDetailPage {
     const a = this.article();
     if (!a) return;
 
-    const confirmFn = (globalThis as any)?.confirm as ((message: string) => boolean) | undefined;
-    if (confirmFn && !confirmFn('Delete this comment?')) return;
-
-    this.store.deleteComment(commentId, a.id);
+    const modal = this.confirmModal();
+    if (modal) {
+      modal.open({
+        title: 'Delete Comment',
+        message: 'Are you sure you want to delete this comment? This action cannot be undone.',
+        confirmText: 'Delete'
+      });
+      modal.confirmed.subscribe(() => {
+        this.store.deleteComment(commentId, a.id);
+      });
+    }
   }
 
   canDelete(item: any): boolean {

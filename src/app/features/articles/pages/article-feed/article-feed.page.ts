@@ -3,16 +3,19 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import type { Article } from '../../../../shared/models/article.model';
 import { ArticlesStore } from '../../data/articles.store';
+import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'drafts-article-feed-page',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, RelativeTimePipe],
   templateUrl: './article-feed.page.html',
   styleUrl: './article-feed.page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArticleFeedPage {
   readonly store = inject(ArticlesStore);
+  readonly authService = inject(AuthService);
 
   readonly query = signal('');
 

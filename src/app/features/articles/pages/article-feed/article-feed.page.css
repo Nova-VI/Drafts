@@ -40,15 +40,13 @@
 }
 
 .row {
-  display: flex;
-  gap: 12px;
   padding: 12px;
-  align-items: flex-start;
 }
 
 .content {
-  flex: 1 1 auto;
-  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .row:hover {
@@ -58,14 +56,14 @@
 
 .thumbLink {
   display: block;
-  width: 160px;
-  flex: 0 0 160px;
+  width: 100%;
+  margin-top: 4px;
 }
 
 .thumb {
   display: block;
   width: 100%;
-  height: 110px;
+  max-height: 300px;
   object-fit: contain;
   background: var(--bg-secondary);
   border-radius: 6px;
@@ -95,7 +93,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
 }
 
 .icon {
@@ -162,3 +159,39 @@
   padding: 20px 16px;
   color: var(--muted);
 }
+
+.iconTextBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.iconTextBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.iconTextBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.voteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.voteBtn:disabled:hover {
+  transform: none;
+  background: transparent;
+}
+

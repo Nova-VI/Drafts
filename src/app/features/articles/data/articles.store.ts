@@ -2,9 +2,10 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { tap, map, switchMap, catchError } from 'rxjs/operators';
-import { of, throwError } from 'rxjs';
+import { of, throwError, lastValueFrom } from 'rxjs';
 import type { Article } from '../../../shared/models/article.model';
 import type { Vote, Voter } from '../../../shared/models/voter.model';
+import type { User } from '../../../core/models/user.model';
 import { API } from '../../../core/api/api.endpoints';
 import { AuthService } from '../../../core/services/auth.service';
 import { environment } from '../../../../environments/environment';
@@ -17,6 +18,7 @@ export class ArticlesStore {
   private readonly isLoading = signal<boolean>(true);
   private readonly error = signal<string | null>(null);
   private readonly items = signal<Article[]>([]);
+  private readonly userCache = new Map<string, string>();
 
   readonly articles = this.items.asReadonly();
   readonly isLoading$ = this.isLoading.asReadonly();
@@ -29,7 +31,12 @@ export class ArticlesStore {
   private loadArticles(): void {
     this.http.get<Article[]>(API.articles.listFull)
       .pipe(
-        map((articles) => articles.map((a) => this.normalizeArticleImages(a))),
+        switchMap((articles) => {
+          // Normalize images first
+          const normalized = articles.map((a) => this.normalizeArticleImages(a));
+          // Then fetch all usernames
+          return this.normalizeUsernames(normalized).then(result => result);
+        }),
         tap((articles) => {
           this.items.set(articles);
           this.isLoading.set(false);
@@ -72,8 +79,60 @@ export class ArticlesStore {
     return { ...article, images, comments };
   }
 
+  private async normalizeUsernames(articles: Article[]): Promise<Article[]> {
+    // Collect all unique user IDs
+    const userIds = new Set<string>();
+    const collectUserIds = (article: Article) => {
+      userIds.add(article.owner);
+      if (article.comments) {
+        article.comments.forEach(collectUserIds);
+      }
+    };
+    articles.forEach(collectUserIds);
+
+    // Fetch usernames for all unique IDs
+    const idsToFetch = Array.from(userIds).filter(id => !this.userCache.has(id));
+    
+    if (idsToFetch.length > 0) {
+      await Promise.all(
+        idsToFetch.map(id =>
+          lastValueFrom(
+            this.http.get<User>(API.users.byId(id)).pipe(
+              tap(user => {
+                this.userCache.set(id, user.username || id);
+              }),
+              catchError(() => {
+                this.userCache.set(id, id);
+                return of(null);
+              })
+            )
+          )
+        )
+      );
+    }
+
+    // Apply cached usernames to articles
+    return articles.map(a => this.applyUsernames(a));
+  }
+
+  private applyUsernames(article: Article): Article {
+    const ownerUsername = this.userCache.get(article.owner) || article.owner;
+    const comments = (article.comments ?? []).map(c => this.applyUsernames(c));
+    return { ...article, ownerUsername, comments };
+  }
+
   getById(id: string): Article | undefined {
-    return this.items().find((a) => a.id === id);
+    const search = (items: Article[]): Article | undefined => {
+      for (const item of items) {
+        if (item.id === id) return item;
+        if (item.comments.length > 0) {
+          const found = search(item.comments);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+    return search(this.items());
   }
 
   private updateTree(list: Article[], targetId: string, update: (a: Article) => Article): Article[] {
@@ -388,10 +447,15 @@ export class ArticlesStore {
       .subscribe({
         next: (reply) => {
           const normalized = this.normalizeArticleImages(reply);
+          // Apply username for the new reply
+          const currentUsername = this.authService.currentUser()?.username || currentUser.id;
+          this.userCache.set(currentUser.id, currentUsername);
+          const withUsername = this.applyUsernames(normalized);
+          
           this.items.update((list) =>
             this.updateTree(list, parentId, (a) => ({
               ...a,
-              comments: [...a.comments, normalized],
+              comments: [...a.comments, withUsername],
               updatedAt: new Date().toISOString(),
             }))
           );
