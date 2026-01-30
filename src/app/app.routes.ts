@@ -7,6 +7,21 @@ import { notificationsRoutes } from './features/notifications/notifications.rout
 
 export const routes: Routes = [
 	{ path: '', redirectTo: '/articles', pathMatch: 'full' },
+	{
+		path: 'about',
+		loadComponent: () =>
+			import('./features/static/pages/about/about.page').then((m) => m.AboutPage),
+	},
+	{
+		path: 'privacy',
+		loadComponent: () =>
+			import('./features/static/pages/privacy/privacy.page').then((m) => m.PrivacyPage),
+	},
+	{
+		path: 'contact',
+		loadComponent: () =>
+			import('./features/static/pages/contact/contact.page').then((m) => m.ContactPage),
+	},
 	...authRoutes,
 	...profileRoutes,
 	...articlesRoutes,

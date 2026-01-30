@@ -1,0 +1,54 @@
+<header class="hero card">
+  <div class="heroTop">
+    <span class="pill">Contact</span>
+    <span class="muted">We usually reply fast (during class hours)</span>
+  </div>
+  <h1 class="pageTitle">Get in touch</h1>
+  <p class="subTitle">
+    This project is made by INSAT students (RT4). For questions, feedback, or bug reports, reach out anytime.
+  </p>
+</header>
+
+<section class="grid">
+  <article class="panel card">
+    <div class="panelHeader">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-11Z" stroke="currentColor" stroke-width="1.6"/>
+          <path d="m6.5 7.5 5.2 4.2a.6.6 0 0 0 .8 0L18 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <h2>Email</h2>
+    </div>
+
+    <p class="muted">Send us a message at:</p>
+
+    <div class="contactRow card">
+      <div class="mono">{{ email }}</div>
+      <a class="btnLink" [href]="'mailto:' + email">Write email</a>
+    </div>
+
+    <p class="hint">(This is a demo email address for the project.)</p>
+  </article>
+
+  <article class="panel card">
+    <div class="panelHeader">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M12 10.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+      </span>
+      <h2>Location</h2>
+    </div>
+
+    <p class="muted">INSAT campus coordinates:</p>
+
+    <div class="contactRow card">
+      <div class="mono">{{ lat }}, {{ lon }}</div>
+      <a class="btnLink" [href]="mapUrl" target="_blank" rel="noopener noreferrer">Open map</a>
+    </div>
+
+    <p class="hint">Tip: open the map to get directions.</p>
+  </article>
+</section>
