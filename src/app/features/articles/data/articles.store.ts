@@ -7,6 +7,7 @@ import type { Article } from '../../../shared/models/article.model';
 import type { Vote, Voter } from '../../../shared/models/voter.model';
 import { API } from '../../../core/api/api.endpoints';
 import { AuthService } from '../../../core/services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ArticlesStore {
@@ -28,7 +29,8 @@ export class ArticlesStore {
   private loadArticles(): void {
     this.http.get<Article[]>(API.articles.listFull)
       .pipe(
-        tap(articles => {
+        map((articles) => articles.map((a) => this.normalizeArticleImages(a))),
+        tap((articles) => {
           this.items.set(articles);
           this.isLoading.set(false);
           this.error.set(null);
@@ -41,6 +43,33 @@ export class ArticlesStore {
           this.isLoading.set(false);
         }
       });
+  }
+
+  private normalizeImageUrl(url: string): string {
+    if (!url) return url;
+    const trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) return trimmed;
+
+    // Some backends may return raw base64 without the data: prefix (e.g. starts with iVBOR... for PNG or /9j/ for JPEG)
+    const isBase64 = /^[A-Za-z0-9+/=\r\n]+$/.test(trimmed.replace(/\s+/g, ''));
+    if (isBase64 && trimmed.length > 100) {
+      // Heuristics for PNG / JPEG signatures
+      if (trimmed.startsWith('iVBOR')) return `data:image/png;base64,${trimmed}`;
+      if (trimmed.startsWith('/9j/')) return `data:image/jpeg;base64,${trimmed}`;
+      // default to PNG if unknown
+      return `data:image/png;base64,${trimmed}`;
+    }
+
+    // If backend returned an absolute path (starting with /) or a filename, prefix API base
+    const base = environment.apiBaseUrl.replace(/\/$/, '');
+    if (trimmed.startsWith('/')) return `${base}${trimmed}`;
+    return `${base}/${trimmed}`;
+  }
+
+  private normalizeArticleImages(article: Article): Article {
+    const images = (article.images ?? []).map(img => this.normalizeImageUrl(img));
+    const comments = (article.comments ?? []).map((c) => this.normalizeArticleImages(c));
+    return { ...article, images, comments };
   }
 
   getById(id: string): Article | undefined {
@@ -265,7 +294,7 @@ export class ArticlesStore {
       });
   }
 
-  addArticle(input: { title: string; content: string; images?: string[]; slug?: string | null }): Promise<string> {
+  addArticle(input: { title: string; content: string; images?: File[]; slug?: string | null }): Promise<string> {
     const formData = new FormData();
     formData.append('title', input.title.trim());
     formData.append('content', input.content.trim());
@@ -331,7 +360,7 @@ export class ArticlesStore {
     return true;
   }
 
-  addReply(parentId: string, content: string) {
+  addReply(parentId: string, content: string, images: File[] = []) {
     const text = content.trim();
     if (!text) return;
 
@@ -348,14 +377,21 @@ export class ArticlesStore {
     formData.append('title', title);
     formData.append('content', text);
     formData.append('fatherId', parentId);
+    
+    if (images && images.length > 0) {
+      images.forEach(img => {
+        formData.append('images', img);
+      });
+    }
 
     this.http.post<Article>(API.articles.create, formData)
       .subscribe({
         next: (reply) => {
+          const normalized = this.normalizeArticleImages(reply);
           this.items.update((list) =>
             this.updateTree(list, parentId, (a) => ({
               ...a,
-              comments: [...a.comments, reply],
+              comments: [...a.comments, normalized],
               updatedAt: new Date().toISOString(),
             }))
           );

@@ -26,6 +26,11 @@
     <section class="list">
       @for (a of articles(); track a.id) {
         <article class="row card">
+          @if (a.images.length > 0) {
+            <a class="thumbLink" [routerLink]="['/articles', a.id]">
+              <img class="thumb" [src]="a.images[0]" [alt]="a.title" />
+            </a>
+          }
           <section class="content">
             <div class="meta">
               <span class="author">{{ a.owner }}</span>
@@ -38,10 +43,11 @@
             </div>
 
             <h2 class="cardTitle">
-              <a class="titleLink" [routerLink]="['/articles', a.id]">{{ a.title }}</a>
+              <a class="titleLink" [routerLink]="['/articles', a.id]">
+                {{ a.title }}
+              </a>
             </h2>
             <p class="excerpt">{{ excerptOf(a) }}</p>
-
             <div class="actions" aria-label="Post actions">
               <button
                 type="button"
@@ -76,13 +82,11 @@
               </button>
             </div>
 
-            <!-- 
-              @if (a.slug) {
-                <div class="tags">
-                  <span class="pill">{{ a.slug }}</span>
-                </div>
-              }
-            --> 
+            @if (a.slug) {
+              <div class="tags">
+                <span class="pill">{{ a.slug }}</span>
+              </div>
+            }
           </section>
         </article>
       }

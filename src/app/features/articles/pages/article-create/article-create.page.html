@@ -39,6 +39,7 @@
           [attr.aria-invalid]="!!contentError()"
           [value]="content()"
           (input)="content.set(($any($event.target).value))"
+          (paste)="onCreatePaste($event)"
         ></textarea>
         <div class="metaRow" aria-hidden="true">
           <span class="muted">Min 10</span>
@@ -46,6 +47,39 @@
         </div>
         @if (contentError()) {
           <p class="error">{{ contentError() }}</p>
+        }
+      </label>
+
+      <label class="field">
+        <span class="labelText">Images (optional)</span>
+        <div class="imageUploadContainer">
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            class="fileInput"
+            (change)="onImageSelect($event)"
+            [disabled]="selectedImages().length >= 10"
+          />
+          <p class="muted">Max 10 images, 5MB each</p>
+        </div>
+        
+        @if (imagePreviews().length > 0) {
+          <div class="imagePreviewsContainer">
+            @for (preview of imagePreviews(); let i = $index; track i) {
+              <div class="imagePreview">
+                <img [src]="preview.url" [alt]="preview.name" />
+                <button
+                  type="button"
+                  class="btn removeImageBtn"
+                  (click)="removeImage(i)"
+                  aria-label="Remove image"
+                >
+                  ✕
+                </button>
+              </div>
+            }
+          </div>
         }
       </label>
 

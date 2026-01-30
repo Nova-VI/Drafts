@@ -54,3 +54,73 @@ button[disabled] {
 .hint {
   margin: 0;
 }
+.imageUploadContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fileInput {
+  padding: 10px;
+  border: 2px dashed var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fileInput:hover:not([disabled]) {
+  border-color: var(--primary);
+  background: var(--bg-secondary);
+}
+
+.fileInput[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.imagePreviewsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.imagePreview {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.imagePreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.removeImageBtn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.removeImageBtn:hover {
+  opacity: 1;
+}

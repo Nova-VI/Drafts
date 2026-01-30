@@ -22,13 +22,23 @@
         <span class="dot">•</span>
         <time class="date">{{ article()!.createdAt | date: 'medium' }}</time>
         <span class="dot">•</span>
-        <span class="comments">{{ article()!.comments.length }} comments</span>
+        <span class="comments">{{ commentCount() }} comments</span>
       </div>
 
       <h2 class="cardTitle">{{ article()!.title }}</h2>
 
       <div class="body">
         <p class="content">{{ article()!.content }}</p>
+        
+        @if (article()!.images && article()!.images.length > 0) {
+          <div class="imagesGallery">
+            @for (image of article()!.images; track image) {
+              <div class="imageTile" (click)="openLightbox(image)" [style.--bg-image]="'url(' + image + ')'">
+                <img [src]="image" [alt]="article()!.title" class="articleImage" />
+              </div>
+            }
+          </div>
+        }
       </div>
 
       <div class="actions" aria-label="Reactions">
@@ -74,12 +84,12 @@
       <div class="divider" role="separator" aria-hidden="true"></div>
 
       <section class="commentsSection" aria-label="Comments">
-        @if(article()!.comments.length === 0) {
+        @if(!hasComments()) {
           <p class="muted noComments">No comments yet. Be the first to comment!</p>
         }
         <div class="commentsHeader">
           <h3 class="sectionTitle">Comments</h3>
-          <p class="muted countLine">{{ article()!.comments.length }} comments</p>
+          <p class="muted countLine">{{ commentCount() }} comments</p>
         </div>
 
         <form class="composer" (submit)="$event.preventDefault(); addRootComment()">
@@ -89,13 +99,42 @@
             placeholder="Write a comment…"
             [value]="newCommentText()"
             (input)="newCommentText.set(($any($event.target).value))"
+            (paste)="handlePaste($event, 'root')"
           ></textarea>
+          
+          @if (newCommentImagePreviews().length > 0) {
+            <div class="commentImagePreviews">
+              @for (preview of newCommentImagePreviews(); let i = $index; track preview.name) {
+                <div class="commentImagePreview">
+                  <img [src]="preview.url" [alt]="preview.name" />
+                  <button
+                    type="button"
+                    class="btn removeCommentImageBtn"
+                    (click)="removeRootCommentImage(i)"
+                    aria-label="Remove image"
+                  >
+                    ✕
+                  </button>
+                </div>
+              }
+            </div>
+          }
+          
           <div class="composerActions">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              class="composerFileInput"
+              (change)="onRootCommentImageSelect($event)"
+              [disabled]="newCommentImages().length >= 5"
+              aria-label="Add images to comment"
+            />
             <button type="submit" class="btn">Post comment</button>
           </div>
         </form>
 
-        @if (article()!.comments.length != 0) {
+        @if (hasComments()) {
           <ng-template #thread let-items>
             <div class="commentsList" role="list">
               @for (c of items; track c.id) {
@@ -107,6 +146,16 @@
                   </div>
 
                   <p class="commentBody">{{ c.content }}</p>
+
+                  @if (c.images && c.images.length > 0) {
+                    <div class="commentImagesGallery">
+                      @for (image of c.images; track image) {
+                        <div class="commentImageTile" (click)="openLightbox(image)" [style.--bg-image]="'url(' + image + ')'">
+                          <img [src]="image" [alt]="c.title" class="commentImage" />
+                        </div>
+                      }
+                    </div>
+                  }
 
                   <div class="commentActions" aria-label="Comment actions">
                     <button
@@ -154,15 +203,44 @@
                         placeholder="Write a reply…"
                         [value]="replyText()"
                         (input)="replyText.set(($any($event.target).value))"
+                        (paste)="handlePaste($event, 'reply')"
                       ></textarea>
+                      
+                      @if (replyImagePreviews().length > 0) {
+                        <div class="commentImagePreviews">
+                          @for (preview of replyImagePreviews(); let i = $index; track preview.name) {
+                                <div class="commentImagePreview">
+                                  <img [src]="preview.url" [alt]="preview.name" />
+                                  <button
+                                    type="button"
+                                    class="btn removeCommentImageBtn"
+                                    (click)="removeReplyImage(i)"
+                                    aria-label="Remove image"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              }
+                        </div>
+                      }
+                      
                       <div class="replyActions">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          class="composerFileInput"
+                          (change)="onReplyImageSelect($event)"
+                          [disabled]="replyImages().length >= 5"
+                          aria-label="Add images to reply"
+                        />
                         <button type="submit" class="btn">Reply</button>
                         <button type="button" class="btn" (click)="cancelReply()">Cancel</button>
                       </div>
                     </form>
                   }
 
-                  @if (c.comments.length > 0) {
+                  @if ((c.comments ?? []).length > 0) {
                     <div class="replies">
                       <ng-container *ngTemplateOutlet="thread; context: { $implicit: c.comments }"></ng-container>
                     </div>
@@ -172,9 +250,15 @@
             </div>
           </ng-template>
 
-          <ng-container *ngTemplateOutlet="thread; context: { $implicit: article()!.comments }"></ng-container>
+          <ng-container *ngTemplateOutlet="thread; context: { $implicit: articleComments() }"></ng-container>
         }
       </section>
     </article>
   }
+
+          @if (lightboxImage()) {
+            <div class="lightboxOverlay" (click)="closeLightbox()">
+              <img [src]="lightboxImage()" alt="preview" (click)="$event.stopPropagation()" />
+            </div>
+          }
 </main>
