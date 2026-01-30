@@ -23,11 +23,13 @@
           </span>
         </a>
       </li>
-      <li role="none"><a role="menuitem" routerLink="/profile" (click)="onNavLinkClick($event)">Profile</a></li>
       <li class="auth-item" role="none">
         <a *ngIf="!auth.isAuthenticated()" role="menuitem" routerLink="/auth/signin" class="btn sign-in" (click)="onNavLinkClick($event)">Sign in</a>
         <div *ngIf="auth.isAuthenticated()" class="auth-user">
-          <span class="auth-username">{{ auth.userName() }}</span>
+          <a class="user-chip" routerLink="/profile" role="menuitem" aria-label="Go to profile" (click)="onNavLinkClick($event)">
+            <span class="avatar" aria-hidden="true">{{ auth.userName().slice(0, 1) }}</span>
+            <span class="auth-username">{{ auth.userName() }}</span>
+          </a>
           <button class="btn sign-out" (click)="signOut(); isMobileMenuOpen && toggleMobileMenu()">Sign out</button>
         </div>
       </li>

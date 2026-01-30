@@ -98,6 +98,49 @@ body.nav-hidden .navbar-card {
   color: var(--text);
 }
 
+.auth-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.user-chip:hover {
+  border-color: color-mix(in oklab, var(--brand) 40%, var(--border));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  transform: translateY(-1px);
+}
+
+.user-chip:active {
+  transform: translateY(0);
+}
+
+.user-chip .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, color-mix(in oklab, var(--brand) 80%, #111), color-mix(in oklab, var(--brand-2) 60%, #111));
+}
+
 /* sign-in (green) and sign-out (red) styles */
 .btn.sign-in {
   background: color-mix(in oklab, var(--brand-2) 26%, var(--surface));
@@ -179,17 +222,37 @@ body.nav-hidden .navbar-card {
     position: absolute;
     top: calc(100% + 6px);
     right: 16px; /* align with container padding */
-    background: var(--surface);
+    background: color-mix(in oklab, var(--bg) 80%, #000);
     flex-direction: column;
     gap: 0;
     width: 200px;
     border-radius: 8px;
     box-shadow: var(--shadow-sm);
+    border: 1px solid color-mix(in oklab, var(--border) 70%, #000);
     display: none;
     padding: 8px 0;
     z-index: 40;
+    align-items: center;
   }
   .navbar-links.open {
     display: flex;
+  }
+
+  .navbar-links .auth-item {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .auth-user {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .user-chip,
+  .btn.sign-out {
+    width: 100%;
+    justify-content: center;
   }
 }
