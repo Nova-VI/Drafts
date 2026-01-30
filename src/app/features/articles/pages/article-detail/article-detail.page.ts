@@ -6,6 +6,7 @@ import { map } from 'rxjs/operators';
 import { ArticlesStore } from '../../data/articles.store';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
 import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal.component';
+import { CommentThreadComponent } from '../../components/comment-thread/comment-thread.component';
 import { AuthService } from '../../../../core/services/auth.service';
 import type { Article } from '../../../../shared/models/article.model';
 
@@ -13,7 +14,7 @@ type SortMode = 'top' | 'newest';
 
 @Component({
   selector: 'drafts-article-detail-page',
-  imports: [CommonModule, RouterModule, RelativeTimePipe, ConfirmModalComponent],
+  imports: [CommonModule, RouterModule, RelativeTimePipe, ConfirmModalComponent, CommentThreadComponent],
   templateUrl: './article-detail.page.html',
   styleUrl: './article-detail.page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

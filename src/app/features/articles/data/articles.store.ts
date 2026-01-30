@@ -494,14 +494,8 @@ export class ArticlesStore {
 
     const previousState = this.items();
 
-    // Optimistic delete
-    this.items.update((list) =>
-      this.updateTree(list, parentId, (parent) => ({
-        ...parent,
-        comments: parent.comments.filter(c => c.id !== commentId),
-        updatedAt: new Date().toISOString(),
-      }))
-    );
+    // Optimistic delete - use removeFromTree to find and remove at any depth
+    this.items.update((list) => this.removeFromTree(list, commentId));
 
     this.http.delete<any>(API.articles.delete(commentId))
       .subscribe({
