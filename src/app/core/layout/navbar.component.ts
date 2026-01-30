@@ -1,5 +1,5 @@
-import { Component, HostBinding, HostListener, OnInit, inject, ElementRef, Renderer2, PLATFORM_ID } from '@angular/core';
-import { NgIf, isPlatformBrowser } from '@angular/common';
+import { Component, HostBinding, HostListener, OnInit, inject, ElementRef, Renderer2 } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
@@ -11,12 +11,11 @@ import { AuthService } from '../services/auth.service';
   styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent implements OnInit {
-  private platformId = inject(PLATFORM_ID);
   isMobileMenuOpen = false;
+  private isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
   private el = inject(ElementRef);
   private renderer = inject(Renderer2);
   private router = inject(Router);
-  private isBrowser = isPlatformBrowser(this.platformId);
 
   // expose auth signals to template
   public auth = inject(AuthService);
@@ -46,7 +45,6 @@ export class NavbarComponent implements OnInit {
   onWindowScroll() {
     if (!this.isBrowser) return;
     // mobile-only behavior
-    if (!isPlatformBrowser(this.platformId)) return;
     const w = window as any;
     const width = w.innerWidth || document.documentElement.clientWidth;
     if (width > 768) {
@@ -74,11 +72,10 @@ export class NavbarComponent implements OnInit {
   onWindowResize() {
     if (!this.isBrowser) return;
     // reset state on resize
-    if (!isPlatformBrowser(this.platformId)) return;
     const w = window as any;
     const width = w.innerWidth || document.documentElement.clientWidth;
     if (width > 768) this.isHidden = false;
-    if (this.isBrowser) this.updateBodyClass();
+    this.updateBodyClass();
   }
 
   // keyboard handling: Escape to close; Arrow navigation and focus trap
@@ -94,7 +91,7 @@ export class NavbarComponent implements OnInit {
     const items: HTMLElement[] = Array.from(menu.querySelectorAll('[role="menuitem"]')) as HTMLElement[];
     if (!items.length) return;
 
-    const active = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement;
+    const active = (typeof document !== 'undefined' ? document.activeElement as HTMLElement : null);
     const idx = items.indexOf(active as HTMLElement);
 
     if (key === 'Escape') {
@@ -137,12 +134,12 @@ export class NavbarComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.isBrowser) this.updateBodyClass();
+    this.updateBodyClass();
     // close menu on route navigation
     this.router.events.subscribe(evt => {
       if (evt instanceof NavigationEnd && this.isMobileMenuOpen) {
         this.isMobileMenuOpen = false;
-        if (this.isBrowser) this.updateBodyClass();
+        this.updateBodyClass();
         this.returnFocusToToggle();
       }
     });
@@ -154,7 +151,7 @@ export class NavbarComponent implements OnInit {
 
   private updateBodyClass() {
     if (!this.isBrowser) return;
-    const body = document && document.body;
+    const body = document?.body;
     if (!body) return;
     if (this.isHidden) body.classList.add('nav-hidden');
     else body.classList.remove('nav-hidden');
