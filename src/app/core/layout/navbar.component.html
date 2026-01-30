@@ -15,7 +15,14 @@
 
     <ul id="nav-menu" class="navbar-links" [class.open]="isMobileMenuOpen" role="menu" [attr.aria-labelledby]="'nav-toggle'">
       <li role="none"><a role="menuitem" routerLink="/articles" (click)="onNavLinkClick($event)">Articles</a></li>
-      <li role="none"><a role="menuitem" routerLink="/notifications" (click)="onNavLinkClick($event)">Notifications</a></li>
+      <li role="none" *ngIf="auth.isAuthenticated()">
+        <a role="menuitem" routerLink="/notifications" class="notif-link" (click)="onNavLinkClick($event)">
+          Notifications
+          <span class="notif-badge" *ngIf="notifications.unreadCount() > 0">
+            {{ notifications.unreadCount() }}
+          </span>
+        </a>
+      </li>
       <li role="none"><a role="menuitem" routerLink="/profile" (click)="onNavLinkClick($event)">Profile</a></li>
       <li class="auth-item" role="none">
         <a *ngIf="!auth.isAuthenticated()" role="menuitem" routerLink="/auth/signin" class="btn sign-in" (click)="onNavLinkClick($event)">Sign in</a>

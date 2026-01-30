@@ -2,6 +2,7 @@ import { Component, HostBinding, HostListener, OnInit, inject, ElementRef, Rende
 import { NgIf } from '@angular/common';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { NotificationsService } from '../services/notifications.service';
 
 @Component({
   selector: 'app-navbar',
@@ -19,6 +20,7 @@ export class NavbarComponent implements OnInit {
 
   // expose auth signals to template
   public auth = inject(AuthService);
+  public notifications = inject(NotificationsService);
 
   private lastScroll = 0;
   private minHideScroll = 10;

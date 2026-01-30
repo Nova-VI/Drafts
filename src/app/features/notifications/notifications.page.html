@@ -1,0 +1,76 @@
+<main class="container">
+  <header class="header">
+    <div>
+      <h1 class="pageTitle">Notifications</h1>
+      <p class="subTitle">Realtime updates about comments and votes.</p>
+    </div>
+
+    <div class="headerActions">
+      <button
+        type="button"
+        class="btn"
+        (click)="markAllRead()"
+        [disabled]="unreadCount() === 0"
+      >
+        Mark all read
+      </button>
+    </div>
+  </header>
+
+  @if (isLoading()) {
+    <section class="card empty">
+      <p>Loading notifications...</p>
+    </section>
+  } @else if (error()) {
+    <section class="card empty">
+      <p>{{ error() }}</p>
+    </section>
+  } @else if (!hasNotifications()) {
+    <section class="card empty">
+      <p>No notifications yet.</p>
+    </section>
+  } @else {
+    <section class="list">
+      @for (n of notifications(); track n.id) {
+        <article class="row card" [class.unread]="!n.isRead">
+          <div class="content">
+            <div class="meta">
+              <span class="actor">{{ n.actor.username || 'Someone' }}</span>
+              <span class="dot">-</span>
+              <time class="date">{{ n.createdAt | relativeTime }}</time>
+              <span class="dot">-</span>
+              <span class="pill">{{ n.type }}</span>
+            </div>
+
+            <p class="message">{{ messageFor(n) }}</p>
+
+            <div class="actions">
+              <a
+                class="btn ghost"
+                [routerLink]="['/articles', n.articleId]"
+                [fragment]="n.commentId ? 'comments' : undefined"
+              >
+                View
+              </a>
+              <button
+                type="button"
+                class="btn ghost"
+                (click)="markRead(n.id)"
+                [disabled]="n.isRead"
+              >
+                Mark read
+              </button>
+              <button
+                type="button"
+                class="btn ghost danger"
+                (click)="remove(n.id)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </article>
+      }
+    </section>
+  }
+</main>
