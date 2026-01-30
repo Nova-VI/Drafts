@@ -1,0 +1,7 @@
+.search-header{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin:16px 0}
+.filters{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.filters label{display:flex;flex-direction:column;font-size:12px}
+.filters .input{min-width:180px}
+.field-selection{display:flex;gap:8px;align-items:center}
+.field-selection label{display:inline-flex;gap:6px;align-items:center;font-size:13px}
+.search-stats{font-size:13px;color:var(--muted);margin:8px 0}

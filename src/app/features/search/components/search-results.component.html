@@ -1,0 +1,13 @@
+<div class="results">
+  <div *ngIf="!results?.length" class="no-results">No results found.</div>
+  <ul>
+    <li *ngFor="let r of results" class="result">
+      <h3>{{ r.title }}</h3>
+      <p class="meta">{{ r.author }} • {{ r.date | slice:0:10 }}</p>
+      <p class="excerpt">{{ r.excerpt }}</p>
+      <div class="tags">
+        <span *ngFor="let t of r.tags" class="tag">{{ t }}</span>
+      </div>
+    </li>
+  </ul>
+</div>

@@ -1,4 +1,5 @@
-import { Component, HostBinding, HostListener, OnInit, inject, ElementRef, Renderer2 } from '@angular/core';
+import { Component, HostBinding, HostListener, OnInit, inject, ElementRef, Renderer2, PLATFORM_ID, Inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { NgIf } from '@angular/common';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { AuthService } from '../services/auth.service';
@@ -11,6 +12,7 @@ import { AuthService } from '../services/auth.service';
   styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent implements OnInit {
+  private platformId = inject(PLATFORM_ID);
   isMobileMenuOpen = false;
   private el = inject(ElementRef);
   private renderer = inject(Renderer2);
@@ -43,6 +45,7 @@ export class NavbarComponent implements OnInit {
   @HostListener('window:scroll', [])
   onWindowScroll() {
     // mobile-only behavior
+    if (!isPlatformBrowser(this.platformId)) return;
     const w = window as any;
     if (!w) return;
     const width = w.innerWidth || document.documentElement.clientWidth;
@@ -70,6 +73,7 @@ export class NavbarComponent implements OnInit {
   @HostListener('window:resize', [])
   onWindowResize() {
     // reset state on resize
+    if (!isPlatformBrowser(this.platformId)) return;
     const w = window as any;
     if (!w) return;
     const width = w.innerWidth || document.documentElement.clientWidth;
@@ -89,7 +93,10 @@ export class NavbarComponent implements OnInit {
     const items: HTMLElement[] = Array.from(menu.querySelectorAll('[role="menuitem"]')) as HTMLElement[];
     if (!items.length) return;
 
-    const active = document.activeElement as HTMLElement;
+    let active: HTMLElement | null = null;
+    if (isPlatformBrowser(this.platformId)) {
+      active = document.activeElement as HTMLElement;
+    }
     const idx = items.indexOf(active as HTMLElement);
 
     if (key === 'Escape') {
@@ -132,7 +139,9 @@ export class NavbarComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.updateBodyClass();
+    if (isPlatformBrowser(this.platformId)) {
+      this.updateBodyClass();
+    }
     // close menu on route navigation
     this.router.events.subscribe(evt => {
       if (evt instanceof NavigationEnd && this.isMobileMenuOpen) {
@@ -148,6 +157,7 @@ export class NavbarComponent implements OnInit {
   }
 
   private updateBodyClass() {
+    if (!isPlatformBrowser(this.platformId)) return;
     const body = document && document.body;
     if (!body) return;
     if (this.isHidden) body.classList.add('nav-hidden');

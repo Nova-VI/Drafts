@@ -1,0 +1,14 @@
+<div class="search-box">
+  <input
+    class="input"
+    type="search"
+    placeholder="Search articles, tags, authors..."
+    [value]="value()"
+    (input)="onInput($any($event.target).value)"
+    aria-label="Search"
+  />
+
+  <ul class="suggestions card" *ngIf="suggestions.length">
+    <li *ngFor="let s of suggestions" (click)="chooseSuggestion(s)" tabindex="0" class="suggestion-item">{{ s }}</li>
+  </ul>
+</div>
