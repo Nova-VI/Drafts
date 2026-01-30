@@ -9,6 +9,7 @@ export type Article = {
   owner: string;
   ownerUsername: string;
   comments: Article[];
+  commentsCount?: number;
   upvotes: number;
   downvotes: number;
   voters: Voter[];

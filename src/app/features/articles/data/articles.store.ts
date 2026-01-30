@@ -21,6 +21,7 @@ type BackendArticle = {
   parentId?: string | null;
   depth?: number;
   comments?: BackendArticle[];
+  commentsCount?: number;
   images?: Array<BackendImage | string>;
   upvoters?: BackendUser[];
   downvoters?: BackendUser[];
@@ -116,6 +117,7 @@ export class ArticlesStore {
     return {
       ...fresh,
       comments: fresh.comments.length > 0 ? fresh.comments : existing.comments,
+      commentsCount: typeof fresh.commentsCount === 'number' ? fresh.commentsCount : existing.commentsCount,
       images: (fresh.images ?? []).length > 0 ? fresh.images : existing.images,
       voters: existing.voters,
       upvotes: existing.upvotes,
@@ -225,6 +227,10 @@ export class ArticlesStore {
 
     const comments = (input.comments ?? []).map((c) => this.toFrontendArticle(c));
 
+    const commentsCount = typeof input.commentsCount === 'number'
+      ? input.commentsCount
+      : comments.length;
+
     return {
       id: input.id,
       fatherId: input.parentId ?? null,
@@ -234,6 +240,7 @@ export class ArticlesStore {
       owner: ownerId,
       ownerUsername: authorUsername ?? this.userCache.get(ownerId) ?? ownerId,
       comments,
+      commentsCount,
       upvotes: upvoters.length,
       downvotes: downvoters.length,
       voters,
