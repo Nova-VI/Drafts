@@ -183,8 +183,15 @@ export class ArticleFeedPage {
 
     if (!sinceDate) return this.setSince('');
 
-    // Always set the date input value to YYYY-MM-DD so it replaces the exact date shown
-    const value = sinceDate.toISOString().slice(0, 10);
+    // For 'today' keep date-only (start of day). For other relative ranges
+    // keep the full ISO timestamp so time-based comparisons (like last hour)
+    // work correctly.
+    let value: string;
+    if (range === 'today') {
+      value = sinceDate.toISOString().slice(0, 10);
+    } else {
+      value = sinceDate.toISOString();
+    }
     this.setSince(value);
     // eslint-disable-next-line no-console
     console.log('Search setSinceRelative:', range, value);
