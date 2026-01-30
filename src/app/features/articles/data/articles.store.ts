@@ -1,14 +1,39 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { tap, map, switchMap, catchError } from 'rxjs/operators';
-import { of, throwError, lastValueFrom } from 'rxjs';
+import { tap, map, catchError } from 'rxjs/operators';
+import { of, lastValueFrom } from 'rxjs';
 import type { Article } from '../../../shared/models/article.model';
 import type { Vote, Voter } from '../../../shared/models/voter.model';
 import type { User } from '../../../core/models/user.model';
 import { API } from '../../../core/api/api.endpoints';
 import { AuthService } from '../../../core/services/auth.service';
 import { environment } from '../../../../environments/environment';
+
+type BackendUser = { id: string; username?: string; email?: string };
+type BackendImage = { path?: string; filename?: string; createdAt?: string | Date };
+type BackendArticle = {
+  id: string;
+  title: string;
+  content: string;
+  authorId?: string;
+  author?: BackendUser;
+  parentId?: string | null;
+  depth?: number;
+  comments?: BackendArticle[];
+  images?: Array<BackendImage | string>;
+  upvoters?: BackendUser[];
+  downvoters?: BackendUser[];
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+};
+
+type VoteResponse = {
+  upvoted?: boolean;
+  downvoted?: boolean;
+  upvoteCount: number;
+  downvoteCount: number;
+};
 
 @Injectable({ providedIn: 'root' })
 export class ArticlesStore {
@@ -20,6 +45,62 @@ export class ArticlesStore {
   private readonly items = signal<Article[]>([]);
   private readonly userCache = new Map<string, string>();
 
+  private voteStorageKey(userId: string): string {
+    return `drafts.articleVotes.${userId}`;
+  }
+
+  private readVoteMap(userId: string): Record<string, Vote> {
+    try {
+      const raw = globalThis?.localStorage?.getItem(this.voteStorageKey(userId));
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as Record<string, Vote>;
+      if (!parsed || typeof parsed !== 'object') return {};
+      return parsed;
+    } catch {
+      return {};
+    }
+  }
+
+  private writeVoteMap(userId: string, map: Record<string, Vote>): void {
+    try {
+      globalThis?.localStorage?.setItem(this.voteStorageKey(userId), JSON.stringify(map));
+    } catch {
+      // ignore
+    }
+  }
+
+  private getPersistedVote(articleId: string): Vote {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return 'null';
+    const map = this.readVoteMap(userId);
+    return map[articleId] ?? 'null';
+  }
+
+  private setPersistedVote(articleId: string, vote: Vote): void {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return;
+
+    const map = this.readVoteMap(userId);
+    if (vote === 'null') {
+      delete map[articleId];
+    } else {
+      map[articleId] = vote;
+    }
+    this.writeVoteMap(userId, map);
+  }
+
+  private applyPersistedVoteState(article: Article): Article {
+    const userId = this.authService.currentUser()?.id;
+    if (!userId) return article;
+
+    const persisted = this.getPersistedVote(article.id);
+    if (persisted === 'null') return article;
+
+    const votersWithoutMe = (article.voters ?? []).filter((v) => v.voterId !== userId);
+    votersWithoutMe.push({ voterId: userId, vote: persisted === 'upvote' ? 'upvote' : 'downvote' });
+    return { ...article, voters: votersWithoutMe };
+  }
+
   readonly articles = this.items.asReadonly();
   readonly isLoading$ = this.isLoading.asReadonly();
   readonly error$ = this.error.asReadonly();
@@ -28,19 +109,53 @@ export class ArticlesStore {
     this.loadArticles();
   }
 
+  private mergeWithExisting(fresh: Article): Article {
+    const existing = this.getById(fresh.id);
+    if (!existing) return fresh;
+
+    return {
+      ...fresh,
+      comments: fresh.comments.length > 0 ? fresh.comments : existing.comments,
+      images: (fresh.images ?? []).length > 0 ? fresh.images : existing.images,
+      voters: existing.voters,
+      upvotes: existing.upvotes,
+      downvotes: existing.downvotes,
+    };
+  }
+
+  private refreshVoteCounts(articleIds: string[]): void {
+    const uniqueIds = Array.from(new Set(articleIds.filter(Boolean)));
+    uniqueIds.forEach((id) => {
+      this.http.get<{ upvoteCount: number; downvoteCount: number }>(API.articles.votes(id))
+        .pipe(
+          catchError(() => of(null)),
+        )
+        .subscribe((counts) => {
+          if (!counts) return;
+          this.items.update((list) =>
+            this.updateTree(list, id, (a) => ({
+              ...a,
+              upvotes: counts.upvoteCount,
+              downvotes: counts.downvoteCount,
+            }))
+          );
+        });
+    });
+  }
+
   private loadArticles(): void {
-    this.http.get<Article[]>(API.articles.listFull)
+    this.http.get<BackendArticle[]>(API.articles.listFull)
       .pipe(
-        switchMap((articles) => {
-          // Normalize images first
-          const normalized = articles.map((a) => this.normalizeArticleImages(a));
-          // Then fetch all usernames
-          return this.normalizeUsernames(normalized).then(result => result);
-        }),
+        map((articles) => articles.map((a) => this.normalizeArticleImages(this.toFrontendArticle(a)))),
+        map((articles) => articles.map((a) => this.mergeWithExisting(a))),
+        map((articles) => articles.map((a) => this.applyPersistedVoteState(a))),
         tap((articles) => {
           this.items.set(articles);
           this.isLoading.set(false);
           this.error.set(null);
+
+          // Backend list endpoint does not include vote relations; hydrate counts via /votes.
+          this.refreshVoteCounts(articles.map((a) => a.id));
         })
       )
       .subscribe({
@@ -50,6 +165,108 @@ export class ArticlesStore {
           this.isLoading.set(false);
         }
       });
+  }
+
+  /**
+   * Load full article with nested comments (used by the detail page).
+   * Backend endpoint supports ?depth=N (default 2).
+   */
+  loadArticleFull(id: string, depth: number = 5): void {
+    if (!id) return;
+
+    this.http.get<BackendArticle>(API.articles.byIdFull(id, depth)).pipe(
+      map((a) => this.applyPersistedVoteState(this.normalizeArticleImages(this.toFrontendArticle(a)))),
+      tap((article) => {
+        this.items.update((list) => {
+          const existing = this.getById(id);
+          if (!existing) return [article, ...list];
+
+          // Preserve local voter state and existing counts until we hydrate from /votes.
+          return this.updateTree(list, id, (old) => ({
+            ...article,
+            voters: old.voters,
+            upvotes: old.upvotes,
+            downvotes: old.downvotes,
+          }));
+        });
+
+        // Backend full endpoint includes images/comments but not root vote relations.
+        this.refreshVoteCounts([id]);
+      }),
+    ).subscribe({
+      error: (err) => console.error('Failed to load article details:', err),
+    });
+  }
+
+  private toIso(value?: string | Date): string {
+    if (!value) return new Date().toISOString();
+    if (typeof value === 'string') return value;
+    return value.toISOString();
+  }
+
+  private toFrontendArticle(input: BackendArticle): Article {
+    const ownerId = input.authorId ?? input.author?.id ?? 'unknown';
+    const authorUsername = input.author?.username;
+    if (ownerId && authorUsername) {
+      this.userCache.set(ownerId, authorUsername);
+    }
+
+    const upvoters = Array.isArray(input.upvoters) ? input.upvoters : [];
+    const downvoters = Array.isArray(input.downvoters) ? input.downvoters : [];
+
+    const voters: Voter[] = [
+      ...upvoters.map((u) => ({ voterId: u.id, vote: 'upvote' as const })),
+      ...downvoters.map((u) => ({ voterId: u.id, vote: 'downvote' as const })),
+    ];
+
+    const images = (input.images ?? [])
+      .map((img) => this.toFrontendImagePath(img))
+      .filter((p) => !!p);
+
+    const comments = (input.comments ?? []).map((c) => this.toFrontendArticle(c));
+
+    return {
+      id: input.id,
+      fatherId: input.parentId ?? null,
+      title: input.title,
+      content: input.content,
+      images,
+      owner: ownerId,
+      ownerUsername: authorUsername ?? this.userCache.get(ownerId) ?? ownerId,
+      comments,
+      upvotes: upvoters.length,
+      downvotes: downvoters.length,
+      voters,
+      slug: null,
+      createdAt: this.toIso(input.createdAt),
+      updatedAt: this.toIso(input.updatedAt),
+    };
+  }
+
+  private toFrontendImagePath(img: BackendImage | string): string {
+    if (!img) return '';
+    if (typeof img === 'string') return img;
+
+    const rawPath = (img.path ?? '').trim();
+    const filename = (img.filename ?? rawPath.split('/').pop() ?? '').trim();
+
+    // If backend already provides dated paths, keep them.
+    if (/uploads\/images\/\d{4}\/\d{2}\/\d{2}\//.test(rawPath) || /uploads\/images\/\d{4}\/\d{2}\/\d{2}\//.test(rawPath.replace(/\\/g, '/'))) {
+      return rawPath;
+    }
+
+    // Backend stores files under uploads/images/YYYY/MM/DD but DB path is often missing the date segments.
+    if (filename && img.createdAt) {
+      const date = new Date(typeof img.createdAt === 'string' ? img.createdAt : img.createdAt.toISOString());
+      if (!Number.isNaN(date.getTime())) {
+        const yyyy = String(date.getFullYear());
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `uploads/images/${yyyy}/${mm}/${dd}/${filename}`;
+      }
+    }
+
+    return rawPath || filename;
   }
 
   private normalizeImageUrl(url: string): string {
@@ -79,47 +296,7 @@ export class ArticlesStore {
     return { ...article, images, comments };
   }
 
-  private async normalizeUsernames(articles: Article[]): Promise<Article[]> {
-    // Collect all unique user IDs
-    const userIds = new Set<string>();
-    const collectUserIds = (article: Article) => {
-      userIds.add(article.owner);
-      if (article.comments) {
-        article.comments.forEach(collectUserIds);
-      }
-    };
-    articles.forEach(collectUserIds);
-
-    // Fetch usernames for all unique IDs
-    const idsToFetch = Array.from(userIds).filter(id => !this.userCache.has(id));
-    
-    if (idsToFetch.length > 0) {
-      await Promise.all(
-        idsToFetch.map(id =>
-          lastValueFrom(
-            this.http.get<User>(API.users.byId(id)).pipe(
-              tap(user => {
-                this.userCache.set(id, user.username || id);
-              }),
-              catchError(() => {
-                this.userCache.set(id, id);
-                return of(null);
-              })
-            )
-          )
-        )
-      );
-    }
-
-    // Apply cached usernames to articles
-    return articles.map(a => this.applyUsernames(a));
-  }
-
-  private applyUsernames(article: Article): Article {
-    const ownerUsername = this.userCache.get(article.owner) || article.owner;
-    const comments = (article.comments ?? []).map(c => this.applyUsernames(c));
-    return { ...article, ownerUsername, comments };
-  }
+  // Username fetching is no longer needed: backend returns `author` for articles/comments.
 
   getById(id: string): Article | undefined {
     const search = (items: Article[]): Article | undefined => {
@@ -280,17 +457,26 @@ export class ArticlesStore {
     );
 
     // Send to server
-    this.http.post<any>(API.articles.upvote(articleId), {})
+    this.http.post<VoteResponse>(API.articles.upvote(articleId), {})
       .subscribe({
         next: (response) => {
-          // Update with server response
+          const upvoted = response.upvoted === true;
+          this.setPersistedVote(articleId, upvoted ? 'upvote' : 'null');
+
           this.items.update((list) =>
-            this.updateTree(list, articleId, (a) => ({
-              ...a,
-              upvotes: response.upvotes,
-              downvotes: response.downvotes,
-              voters: response.voters,
-            }))
+            this.updateTree(list, articleId, (a) => {
+              const votersWithoutMe = a.voters.filter((v) => v.voterId !== currentUserId);
+              const voters = upvoted
+                ? [...votersWithoutMe, { voterId: currentUserId, vote: 'upvote' as const }]
+                : votersWithoutMe;
+
+              return {
+                ...a,
+                voters,
+                upvotes: response.upvoteCount,
+                downvotes: response.downvoteCount,
+              };
+            })
           );
         },
         error: (err) => {
@@ -332,17 +518,26 @@ export class ArticlesStore {
     );
 
     // Send to server
-    this.http.post<any>(API.articles.downvote(articleId), {})
+    this.http.post<VoteResponse>(API.articles.downvote(articleId), {})
       .subscribe({
         next: (response) => {
-          // Update with server response
+          const downvoted = response.downvoted === true;
+          this.setPersistedVote(articleId, downvoted ? 'downvote' : 'null');
+
           this.items.update((list) =>
-            this.updateTree(list, articleId, (a) => ({
-              ...a,
-              upvotes: response.upvotes,
-              downvotes: response.downvotes,
-              voters: response.voters,
-            }))
+            this.updateTree(list, articleId, (a) => {
+              const votersWithoutMe = a.voters.filter((v) => v.voterId !== currentUserId);
+              const voters = downvoted
+                ? [...votersWithoutMe, { voterId: currentUserId, vote: 'downvote' as const }]
+                : votersWithoutMe;
+
+              return {
+                ...a,
+                voters,
+                upvotes: response.upvoteCount,
+                downvotes: response.downvoteCount,
+              };
+            })
           );
         },
         error: (err) => {
@@ -353,32 +548,44 @@ export class ArticlesStore {
       });
   }
 
-  addArticle(input: { title: string; content: string; images?: File[]; slug?: string | null }): Promise<string> {
-    const formData = new FormData();
-    formData.append('title', input.title.trim());
-    formData.append('content', input.content.trim());
-    if (input.slug) {
-      formData.append('slug', input.slug);
-    }
-    if (input.images && input.images.length > 0) {
-      input.images.forEach(img => {
-        formData.append('images', img);
-      });
+  async addArticle(input: { title: string; content: string; images?: File[] }): Promise<string> {
+    const currentUser = this.authService.currentUser();
+    if (!currentUser) {
+      throw new Error('Must be logged in to create articles');
     }
 
-    return new Promise((resolve, reject) => {
-      this.http.post<{ id: string }>(API.articles.create, formData)
-        .subscribe({
-          next: (response) => {
-            this.loadArticles();
-            resolve(response.id);
-          },
-          error: (err) => {
-            console.error('Failed to create article:', err);
-            reject(err);
-          }
-        });
-    });
+    const created = await lastValueFrom(
+      this.http.post<BackendArticle>(API.articles.create, {
+        title: input.title.trim(),
+        content: input.content.trim(),
+      }),
+    );
+
+    const createdArticle = this.normalizeArticleImages(this.toFrontendArticle(created));
+
+    // Ensure the UI has a username immediately even if backend didn't include `author`
+    const ownerUsername = currentUser.username ?? currentUser.id;
+    this.userCache.set(currentUser.id, ownerUsername);
+
+    this.items.update((list) => [
+      { ...createdArticle, owner: currentUser.id, ownerUsername },
+      ...list,
+    ]);
+
+    if (input.images && input.images.length > 0) {
+      await this.uploadImages(createdArticle.id, input.images);
+      this.loadArticleFull(createdArticle.id, 5);
+    }
+
+    return createdArticle.id;
+  }
+
+  private async uploadImages(articleId: string, files: File[]): Promise<void> {
+    if (!files.length) return;
+    const formData = new FormData();
+    formData.append('articleId', articleId);
+    files.forEach((f) => formData.append('files', f));
+    await lastValueFrom(this.http.post(API.images.uploadMultiple, formData));
   }
 
   deleteArticle(articleId: string): boolean {
@@ -432,27 +639,25 @@ export class ArticlesStore {
     // Generate a title for the comment (first 50 chars or "Comment")
     const title = text.substring(0, 50) + (text.length > 50 ? '...' : '');
 
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('content', text);
-    formData.append('fatherId', parentId);
-    
-    if (images && images.length > 0) {
-      images.forEach(img => {
-        formData.append('images', img);
-      });
-    }
-
     return lastValueFrom(
-      this.http.post<Article>(API.articles.create, formData)
+      this.http.post<BackendArticle>(API.articles.createComment, {
+        title,
+        content: text,
+        parentId,
+      })
         .pipe(
           map((reply) => {
-            const normalized = this.normalizeArticleImages(reply);
-            // Apply username for the new reply
+            const normalized = this.normalizeArticleImages(this.toFrontendArticle(reply));
+
+            // Ensure username for the new reply (backend may not return author relation here)
             const currentUsername = this.authService.currentUser()?.username || currentUser.id;
             this.userCache.set(currentUser.id, currentUsername);
-            const withUsername = this.applyUsernames(normalized);
-            
+            const withUsername: Article = {
+              ...normalized,
+              owner: currentUser.id,
+              ownerUsername: currentUsername,
+            };
+
             this.items.update((list) =>
               this.updateTree(list, parentId, (a) => ({
                 ...a,
@@ -460,18 +665,41 @@ export class ArticlesStore {
                 updatedAt: new Date().toISOString(),
               }))
             );
-            
-            return reply.id;
+
+            return withUsername.id;
+          }),
+          tap(async (replyId) => {
+            if (replyId && images.length > 0) {
+              try {
+                await this.uploadImages(replyId, images);
+                // Refresh parent tree so images show up
+                this.loadArticleFull(this.findRootArticleId(parentId) ?? parentId, 5);
+              } catch (e) {
+                console.error('Failed to upload comment images:', e);
+              }
+            }
           }),
           catchError((err) => {
             console.error('Failed to add reply:', err);
-            if (err.status === 401) {
-              console.error('Unauthorized: Please log in to comment');
-            }
             return of(null);
           })
         )
     );
+  }
+
+  private findRootArticleId(anyId: string): string | null {
+    const findInTree = (list: Article[], targetId: string, currentRootId: string | null): string | null => {
+      for (const a of list) {
+        const rootId = currentRootId ?? a.id;
+        if (a.id === targetId) return rootId;
+        if (a.comments.length) {
+          const found = findInTree(a.comments, targetId, rootId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findInTree(this.items(), anyId, null);
   }
 
   deleteComment(commentId: string, parentId: string): boolean {
@@ -513,18 +741,12 @@ export class ArticlesStore {
   }
 
   private updateArticle(articleId: string, updates: Partial<Article>) {
-    const formData = new FormData();
-    if (updates.title) {
-      formData.append('title', updates.title);
-    }
-    if (updates.content) {
-      formData.append('content', updates.content);
-    }
-    if (updates.slug) {
-      formData.append('slug', updates.slug);
-    }
+    const payload: { title?: string; content?: string } = {};
+    if (updates.title) payload.title = updates.title;
+    if (updates.content) payload.content = updates.content;
 
-    this.http.patch<Article>(API.articles.update(articleId), formData)
+    this.http.patch<BackendArticle>(API.articles.update(articleId), payload)
+      .pipe(map((updated) => this.normalizeArticleImages(this.toFrontendArticle(updated))))
       .subscribe({
         next: (updated) => {
           this.items.update((list) =>

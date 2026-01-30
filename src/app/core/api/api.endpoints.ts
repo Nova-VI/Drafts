@@ -18,9 +18,9 @@ export const API = {
     /** GET -> returns User object */
     byId: (id: string) => `${base}/users/${id}`,
     /** GET -> returns User object */
-    byEmail: (email: string) => `${base}/users/email/${email}`,
+    byEmail: (email: string) => `${base}/users/email/${encodeURIComponent(email)}`,
     /** GET -> returns User object */
-    byUsername: (username: string) => `${base}/users/username/${username}`,
+    byUsername: (username: string) => `${base}/users/username/${encodeURIComponent(username)}`,
     /** GET -> returns current User object */
     me: `${base}/users/infos`,
     /** PATCH: { name?, lastName?, bio? } -> returns updated User object */
@@ -32,37 +32,38 @@ export const API = {
   },
 
   articles: {
-    /** GET -> returns Article[] with nested comments */
-    listFull: `${base}/article/full`,
-    /** GET -> returns Article object with nested comments */
-    byIdFull: (id: string) => `${base}/article/full/${id}`,
-    /** GET -> returns Article[] with full details for a specific user */
-    byUserIdFull: (userId: string) => `${base}/article/full/byUserId/${userId}`,
+    /** GET -> returns top-level articles */
+    listFull: `${base}/articles`,
+    /** GET -> returns an article with nested comments (depth is optional) */
+    byIdFull: (id: string, depth?: number) => `${base}/articles/full/${id}${typeof depth === 'number' ? `?depth=${depth}` : ''}`,
+    /** GET -> returns nested replies for a comment (depth is optional) */
+    commentReplies: (commentId: string, depth?: number) => `${base}/articles/comments/${commentId}/replies${typeof depth === 'number' ? `?depth=${depth}` : ''}`,
 
-    /** GET -> returns Article[] owned by the current user */
-    mineProperties: `${base}/article/property`,
-    /** GET: ?page=1&limit=10&ownerid=... -> returns Article[] (paginated) */
-    find: (queryString: string) => `${base}/article/find${queryString.startsWith('?') ? '' : '?'}${queryString}`,
+    /** GET -> search with pagination via query params (q, authorId, page, limit, sortBy, sortOrder) */
+    search: (queryString: string) => `${base}/articles/search${queryString.startsWith('?') ? '' : '?'}${queryString}`,
 
-    /** POST (Multipart): { title, content, fatherId?, slug?, images? } -> returns { id: string } */
-    create: `${base}/article/create/`,
-    /** PATCH (Multipart): { title?, content?, slug? } -> returns updated Article object */
-    update: (id: string) => `${base}/article/${id}`,
-    /** DELETE -> returns { message: string } */
-    delete: (id: string) => `${base}/article/${id}`,
+    /** POST: { title, content, parentId? } -> returns created Article */
+    create: `${base}/articles`,
+    /** POST: { title, content, parentId } -> returns created Comment (Article) */
+    createComment: `${base}/articles/comments`,
+    /** PATCH: { title?, content? } -> returns updated Article */
+    update: (id: string) => `${base}/articles/${id}`,
+    /** DELETE -> returns 204 No Content */
+    delete: (id: string) => `${base}/articles/${id}`,
 
-    /** GET -> returns User object of the article creator */
-    owner: (articleId: string) => `${base}/article/owner/${articleId}`,
-    /** GET -> returns { images: string[] } */
-    images: (articleId: string) => `${base}/article/${articleId}/images`,
+    /** POST -> returns { upvoted, upvoteCount, downvoteCount } */
+    upvote: (articleId: string) => `${base}/articles/${articleId}/upvote`,
+    /** POST -> returns { downvoted, upvoteCount, downvoteCount } */
+    downvote: (articleId: string) => `${base}/articles/${articleId}/downvote`,
+    /** GET -> returns { upvoteCount, downvoteCount } */
+    votes: (articleId: string) => `${base}/articles/${articleId}/votes`,
+  },
 
-    /** POST -> returns { upvotes: number, downvotes: number, voters: object[] } */
-    upvote: (articleId: string) => `${base}/article/${articleId}/upvote`,
-    /** POST -> returns { upvotes: number, downvotes: number, voters: object[] } */
-    downvote: (articleId: string) => `${base}/article/${articleId}/downvote`,
-
-    /** GET -> returns Article[] (title search) */
-    search: (term: string) => `${base}/article/search/${term}`,
+  images: {
+    /** POST (Multipart): fields { file, articleId } */
+    upload: `${base}/images/upload`,
+    /** POST (Multipart): fields { files[], articleId } */
+    uploadMultiple: `${base}/images/upload-multiple`,
   },
 
   notifications: {

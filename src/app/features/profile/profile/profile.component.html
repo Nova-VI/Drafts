@@ -1,5 +1,13 @@
 <div class="profile-container">
-  @if (profileUser(); as user) {
+  @if (isLoading()) {
+    <div class="no-user">
+      <p>Loading profile…</p>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="no-user">
+      <p>{{ errorMessage() }}</p>
+    </div>
+  } @else if (profileUser(); as user) {
     <div class="profile-card">
       @if (successMessage()) {
         <div class="success-toast">{{ successMessage() }}</div>
@@ -91,10 +99,6 @@
           </div>
         </form>
       }
-    </div>
-  } @else {
-    <div class="no-user">
-      <p>Please sign in to view your profile.</p>
     </div>
   }
 </div>
