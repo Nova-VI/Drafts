@@ -37,9 +37,25 @@ export class ArticleFeedPage {
 
       // since filter (ISO date prefix) - article.createdAt should be comparable
       if (f.since) {
-        const artDate = new Date(a.createdAt);
-        const sinceDate = new Date(f.since);
-        if (isNaN(artDate.getTime()) || isNaN(sinceDate.getTime()) || artDate < sinceDate) return false;
+        // Parse since date (accepts YYYY-MM-DD from <input type="date" or any ISO)
+        let sinceDate: Date;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(f.since)) {
+          // ensure start of day local time
+          sinceDate = new Date(f.since + 'T00:00:00');
+        } else {
+          sinceDate = new Date(f.since);
+        }
+
+        // Parse article createdAt which may be ISO string or epoch millis string/number
+        let artDate: Date;
+        const ca = a.createdAt;
+        if (typeof ca === 'number' || (/^\d+$/.test(String(ca)))) {
+          artDate = new Date(Number(ca));
+        } else {
+          artDate = new Date(String(ca));
+        }
+
+        if (isNaN(artDate.getTime()) || isNaN(sinceDate.getTime()) || artDate.getTime() < sinceDate.getTime()) return false;
       }
 
       // full-text filter across title/content/slug
@@ -69,9 +85,11 @@ export class ArticleFeedPage {
     this.query.set(value);
     // parse simple filter tokens from the input (author:, since:YYYY-MM-DD)
     const raw = value || '';
-    // regex supports quoted values e.g. author:"John Doe"
-    const tokenRe = /(author|owner|since):(\"[^\"]+\"|'[^']+'|[^\s]+)/gi;
-    const filters = { text: raw, author: '', since: '' };
+    // start from existing filters so we don't wipe manual inputs
+    const existing = this.filters();
+    // regex supports quoted values e.g. author:"John Doe" (since tokens removed)
+    const tokenRe = /(author|owner):(\"[^\"]+\"|'[^']+'|[^\s]+)/gi;
+    const filters = { text: raw, author: existing.author || '', since: existing.since || '' };
     let m: RegExpExecArray | null;
     const consumed: string[] = [];
     while ((m = tokenRe.exec(raw))) {
@@ -84,7 +102,6 @@ export class ArticleFeedPage {
       }
       consumed.push(m[0]);
       if (key === 'author' || key === 'owner') filters.author = val;
-      if (key === 'since') filters.since = val;
     }
 
     // remaining text is raw minus consumed tokens
@@ -92,7 +109,10 @@ export class ArticleFeedPage {
     for (const c of consumed) text = text.replace(c, '');
     filters.text = text.trim();
 
-    this.filters.set(filters);
+    this.filters.set({ ...existing, ...filters });
+    // debug
+    // eslint-disable-next-line no-console
+    console.log('Search setQuery parsed filters (merged):', { ...existing, ...filters });
     // debug
     // eslint-disable-next-line no-console
     console.log('Search setQuery parsed filters:', filters);
@@ -110,5 +130,41 @@ export class ArticleFeedPage {
     this.filters.set({ ...f, since: value.trim() });
     // eslint-disable-next-line no-console
     console.log('Search setSince:', value);
+  }
+
+  setSinceRelative(range: string) {
+    if (!range) {
+      this.setSince('');
+      return;
+    }
+    const now = new Date();
+    let sinceDate: Date | null = null;
+    switch (range) {
+      case 'last_hour':
+        sinceDate = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case 'today':
+        sinceDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'last_24h':
+        sinceDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case 'last_week':
+        sinceDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'last_month':
+        sinceDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        sinceDate = null;
+    }
+
+    if (!sinceDate) return this.setSince('');
+
+    // Always set the date input value to YYYY-MM-DD so it replaces the exact date shown
+    const value = sinceDate.toISOString().slice(0, 10);
+    this.setSince(value);
+    // eslint-disable-next-line no-console
+    console.log('Search setSinceRelative:', range, value);
   }
 }

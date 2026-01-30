@@ -33,13 +33,14 @@
           aria-label="Filter by author"
         />
 
-        <input
-          class="input"
-          type="date"
-          [value]="filters().since"
-          (input)="setSince($any($event.target).value)"
-          aria-label="Filter since date"
-        />
+        <select class="input" aria-label="Quick date" (change)="setSinceRelative($any($event.target).value)">
+          <option value="">All dates</option>
+          <option value="last_hour">Last hour</option>
+          <option value="today">Today</option>
+          <option value="last_24h">Last 24 hours</option>
+          <option value="last_week">Last week</option>
+          <option value="last_month">Last month</option>
+        </select>
       </div>
     </div>
   </header>
