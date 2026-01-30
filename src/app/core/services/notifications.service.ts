@@ -20,9 +20,17 @@ export class NotificationsService {
   private socket: Socket | null = null;
   private loadedOnce = false;
 
+  private readonly toastItems = signal<Array<{
+    id: string;
+    message: string;
+    route: string[];
+    fragment?: string;
+  }>>([]);
+
   readonly notifications = this.items.asReadonly();
   readonly isLoading$ = this.isLoading.asReadonly();
   readonly error$ = this.error.asReadonly();
+  readonly toasts = this.toastItems.asReadonly();
   readonly unreadCount = computed(() =>
     this.items().filter((n) => !n.isRead).length
   );
@@ -137,5 +145,38 @@ export class NotificationsService {
     if (existing) return;
 
     this.items.update((list) => [notification, ...list]);
+    this.pushToast(notification);
+  }
+
+  private pushToast(notification: Notification): void {
+    if (!this.isBrowser) return;
+
+    const message = this.messageFor(notification);
+    const toastId = `${notification.id}-${Date.now()}`;
+    const route = notification.articleId ? ['/articles', notification.articleId] : ['/notifications'];
+    const fragment = notification.commentId ? 'comments' : undefined;
+    this.toastItems.update((list) => [{ id: toastId, message, route, fragment }, ...list]);
+
+    setTimeout(() => {
+      this.toastItems.update((list) => list.filter((t) => t.id !== toastId));
+    }, 3500);
+  }
+
+  private messageFor(notification: Notification): string {
+    const actor = notification.actor?.username || 'Someone';
+    const target = notification.targetType === 'comment' ? 'comment' : 'post';
+
+    switch (notification.type) {
+      case 'comment':
+        return `${actor} commented on your post`;
+      case 'reply':
+        return `${actor} replied to your comment`;
+      case 'upvote':
+        return `${actor} upvoted your ${target}`;
+      case 'downvote':
+        return `${actor} downvoted your ${target}`;
+      default:
+        return `${actor} interacted with your ${target}`;
+    }
   }
 }
