@@ -4,6 +4,7 @@
       <h1 class="pageTitle">Articles</h1>
     </div>
 
+
     <div class="headerActions">
       @if (authService.isAuthenticated()) {
         <button type="button" class="btn iconTextBtn" [routerLink]="['/articles/new']">
@@ -13,14 +14,33 @@
           <span>New Article</span>
         </button>
       }
-      <input
-        class="input search"
-        type="search"
-        placeholder="Search title, content, owner…"
-        [value]="query()"
-        (input)="setQuery(($any($event.target).value))"
-        aria-label="Search articles"
-      />
+      <div class="searchControls" style="display:flex;gap:8px;align-items:center">
+        <input
+          class="input search"
+          type="search"
+          placeholder="Search title, content…"
+          [value]="query()"
+          (input)="setQuery(($any($event.target).value))"
+          aria-label="Search articles"
+        />
+
+        <input
+          class="input"
+          type="search"
+          placeholder="Author"
+          [value]="filters().author"
+          (input)="setAuthor($any($event.target).value)"
+          aria-label="Filter by author"
+        />
+
+        <input
+          class="input"
+          type="date"
+          [value]="filters().since"
+          (input)="setSince($any($event.target).value)"
+          aria-label="Filter since date"
+        />
+      </div>
     </div>
   </header>
 
