@@ -419,14 +419,14 @@ export class ArticlesStore {
     return true;
   }
 
-  addReply(parentId: string, content: string, images: File[] = []) {
+  addReply(parentId: string, content: string, images: File[] = []): Promise<string | null> {
     const text = content.trim();
-    if (!text) return;
+    if (!text) return Promise.resolve(null);
 
     const currentUser = this.authService.currentUser();
     if (!currentUser) {
       console.error('Must be logged in to add comments');
-      return;
+      return Promise.resolve(null);
     }
 
     // Generate a title for the comment (first 50 chars or "Comment")
@@ -443,30 +443,35 @@ export class ArticlesStore {
       });
     }
 
-    this.http.post<Article>(API.articles.create, formData)
-      .subscribe({
-        next: (reply) => {
-          const normalized = this.normalizeArticleImages(reply);
-          // Apply username for the new reply
-          const currentUsername = this.authService.currentUser()?.username || currentUser.id;
-          this.userCache.set(currentUser.id, currentUsername);
-          const withUsername = this.applyUsernames(normalized);
-          
-          this.items.update((list) =>
-            this.updateTree(list, parentId, (a) => ({
-              ...a,
-              comments: [...a.comments, withUsername],
-              updatedAt: new Date().toISOString(),
-            }))
-          );
-        },
-        error: (err) => {
-          console.error('Failed to add reply:', err);
-          if (err.status === 401) {
-            console.error('Unauthorized: Please log in to comment');
-          }
-        }
-      });
+    return lastValueFrom(
+      this.http.post<Article>(API.articles.create, formData)
+        .pipe(
+          map((reply) => {
+            const normalized = this.normalizeArticleImages(reply);
+            // Apply username for the new reply
+            const currentUsername = this.authService.currentUser()?.username || currentUser.id;
+            this.userCache.set(currentUser.id, currentUsername);
+            const withUsername = this.applyUsernames(normalized);
+            
+            this.items.update((list) =>
+              this.updateTree(list, parentId, (a) => ({
+                ...a,
+                comments: [...a.comments, withUsername],
+                updatedAt: new Date().toISOString(),
+              }))
+            );
+            
+            return reply.id;
+          }),
+          catchError((err) => {
+            console.error('Failed to add reply:', err);
+            if (err.status === 401) {
+              console.error('Unauthorized: Please log in to comment');
+            }
+            return of(null);
+          })
+        )
+    );
   }
 
   deleteComment(commentId: string, parentId: string): boolean {

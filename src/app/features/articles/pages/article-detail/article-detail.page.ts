@@ -44,6 +44,9 @@ export class ArticleDetailPage implements AfterViewInit {
   private readonly sortedCommentIds = signal<string[]>([]);
   private readonly sortedReplyIds = signal<Map<string, string[]>>(new Map());
   private lastSortedArticleId: string | null = null;
+  
+  // Track new comments added in current session (appear at top before sorting)
+  private readonly newCommentIds = signal<Set<string>>(new Set());
 
   private readonly id = toSignal(this.route.paramMap.pipe(map((pm) => pm.get('id') ?? '')),
     { initialValue: '' }
@@ -65,6 +68,8 @@ export class ArticleDetailPage implements AfterViewInit {
       if (art && id && id !== this.lastSortedArticleId) {
         this.lastSortedArticleId = id;
         this.updateSortingSnapshot(art.comments);
+        // Clear new comment tracking when navigating to a different article
+        this.newCommentIds.set(new Set());
       }
     });
   }
@@ -95,11 +100,16 @@ export class ArticleDetailPage implements AfterViewInit {
   sortedComments = computed(() => {
     const sortedIds = this.sortedCommentIds();
     const currentComments = this.articleComments();
+    const newIds = this.newCommentIds();
     
-    // Map sorted IDs to current comment objects
-    return sortedIds
+    // Separate new comments (added in this session) from sorted comments
+    const newComments = currentComments.filter(c => newIds.has(c.id));
+    const sortedExisting = sortedIds
       .map(id => currentComments.find(c => c.id === id))
       .filter((c): c is Article => c !== undefined);
+    
+    // New comments appear at top, followed by sorted comments
+    return [...newComments, ...sortedExisting];
   });
 
   // Visible comments based on pagination
@@ -148,6 +158,10 @@ export class ArticleDetailPage implements AfterViewInit {
   // Get visible replies for a specific comment
   getVisibleReplies(commentId: string, replies: Article[]): Article[] {
     const sortedIds = this.sortedReplyIds().get(commentId);
+    const newIds = this.newCommentIds();
+    
+    // Separate new replies from sorted replies
+    const newReplies = replies.filter(r => newIds.has(r.id));
     
     // If we have sorted IDs, map them to current reply objects
     if (sortedIds) {
@@ -156,12 +170,16 @@ export class ArticleDetailPage implements AfterViewInit {
         .filter((r): r is Article => r !== undefined);
       
       const visibleCount = this.visibleRepliesCount().get(commentId) || 2;
-      return sorted.slice(0, visibleCount);
+      const sortedVisible = sorted.slice(0, visibleCount);
+      
+      // New replies at top, followed by sorted replies
+      return [...newReplies, ...sortedVisible];
     }
     
     // Fallback to showing first replies if no sort data
     const visibleCount = this.visibleRepliesCount().get(commentId) || 2;
-    return replies.slice(0, visibleCount);
+    const fallbackVisible = replies.filter(r => !newIds.has(r.id)).slice(0, visibleCount);
+    return [...newReplies, ...fallbackVisible];
   }
 
   hasMoreReplies(commentId: string, replies: Article[]): boolean {
@@ -213,7 +231,18 @@ export class ArticleDetailPage implements AfterViewInit {
     if (!a) return;
     const text = this.newCommentText().trim();
     if (!text) return;
-    this.store.addReply(a.id, text, this.newCommentImages());
+    
+    this.store.addReply(a.id, text, this.newCommentImages()).then(newCommentId => {
+      if (newCommentId) {
+        // Track this as a new comment so it appears at top
+        this.newCommentIds.update(ids => {
+          const newSet = new Set(ids);
+          newSet.add(newCommentId);
+          return newSet;
+        });
+      }
+    });
+    
     this.newCommentText.set('');
     this.newCommentImages.set([]);
     this.newCommentImagePreviews.set([]);
@@ -253,7 +282,18 @@ export class ArticleDetailPage implements AfterViewInit {
   submitReply(parentId: string) {
     const text = this.replyText().trim();
     if (!text) return;
-    this.store.addReply(parentId, text, this.replyImages());
+    
+    this.store.addReply(parentId, text, this.replyImages()).then(newReplyId => {
+      if (newReplyId) {
+        // Track this as a new reply so it appears at top of replies
+        this.newCommentIds.update(ids => {
+          const newSet = new Set(ids);
+          newSet.add(newReplyId);
+          return newSet;
+        });
+      }
+    });
+    
     this.cancelReply();
   }
 
