@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { map, switchMap } from 'rxjs/operators';
+import { map, switchMap, catchError, finalize, tap } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -23,20 +23,61 @@ export class ProfileComponent {
   private route = inject(ActivatedRoute);
 
   currentUser = this.authService.currentUser;
+
+  isEditing = signal(false);
+  isLoading = signal(false);
+  errorMessage = signal('');
+  successMessage = signal('');
   
   // Profile user - either from route param or current user
-  profileUser = toSignal(
+  profileUser = toSignal<User | null>(
     this.route.paramMap.pipe(
       map(params => params.get('username')),
+      tap(() => {
+        this.isLoading.set(true);
+        this.errorMessage.set('');
+      }),
       switchMap(username => {
-        if (!username) {
-          // No username in route, show current user
-          return of(this.currentUser());
-        }
-        // Fetch user by username
-        return this.http.get<User>(API.users.byUsername(username));
-      })
-    )
+        // /profile -> load "me" from backend (more reliable than waiting for AuthService bootstrap)
+        const source$ = !username
+          ? this.http.get<User>(API.users.me).pipe(
+              tap((me) => {
+                // keep AuthService in sync for the rest of the app
+                this.authService.updateUser(me);
+              }),
+            )
+          : this.http.get<User>(API.users.byUsername(username)).pipe(
+              catchError((err) => {
+                // Some environments still run an older backend build where this route doesn't exist.
+                // If we get a 404 (often with "Cannot GET /users/username/..."), fall back to listing users.
+                if (err?.status === 404) {
+                  return this.http.get<User[]>(API.users.all).pipe(
+                    map((users) => {
+                      const match = (users ?? []).find(
+                        (u) => (u.username ?? '').toLowerCase() === username.toLowerCase(),
+                      );
+                      if (!match) {
+                        throw new Error('User not found');
+                      }
+                      return match;
+                    }),
+                  );
+                }
+                throw err;
+              }),
+            );
+
+        return source$.pipe(
+          catchError((err) => {
+            // errorInterceptor normalizes err.message
+            this.errorMessage.set(err?.message || 'Failed to load profile');
+            return of(null);
+          }),
+          finalize(() => this.isLoading.set(false)),
+        );
+      }),
+    ),
+    { initialValue: null },
   );
 
   isOwnProfile = computed(() => {
@@ -44,11 +85,6 @@ export class ProfileComponent {
     const profile = this.profileUser();
     return current && profile && current.id === profile.id;
   });
-
-  isEditing = signal(false);
-  isLoading = signal(false);
-  errorMessage = signal('');
-  successMessage = signal('');
 
   profileForm = this.fb.nonNullable.group({
     name: [''],

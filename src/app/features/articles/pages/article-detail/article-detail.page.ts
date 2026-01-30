@@ -45,6 +45,7 @@ export class ArticleDetailPage implements AfterViewInit {
   private readonly sortedCommentIds = signal<string[]>([]);
   private readonly sortedReplyIds = signal<Map<string, string[]>>(new Map());
   private lastSortedArticleId: string | null = null;
+  private lastServerCommentCount = 0;
   
   // Track new comments added in current session (appear at top before sorting)
   private readonly newCommentIds = signal<Set<string>>(new Set());
@@ -60,17 +61,40 @@ export class ArticleDetailPage implements AfterViewInit {
   });
 
   constructor() {
-    // Initialize sorting snapshot only when article ID changes (page load/navigation)
+    // Load full article (with nested comments) when navigating to the detail page.
+    effect(() => {
+      const id = this.id();
+      if (id) {
+        this.store.loadArticleFull(id, 5);
+      }
+    });
+
+    // Initialize sorting snapshot when article ID changes OR when server-loaded comments arrive.
     effect(() => {
       const id = this.id();
       const art = this.article();
+      const newIds = this.newCommentIds();
       
-      // Only update snapshot if we're viewing a different article
-      if (art && id && id !== this.lastSortedArticleId) {
+      if (!art || !id) return;
+
+      const serverComments = (art.comments ?? []).filter(c => !newIds.has(c.id));
+      const serverCount = serverComments.length;
+
+      // New navigation: reset snapshot + local new-comment tracking
+      if (id !== this.lastSortedArticleId) {
         this.lastSortedArticleId = id;
-        this.updateSortingSnapshot(art.comments);
-        // Clear new comment tracking when navigating to a different article
+        this.lastServerCommentCount = serverCount;
+        this.updateSortingSnapshot(serverComments);
         this.newCommentIds.set(new Set());
+        return;
+      }
+
+      // Same article: update snapshot only when server-provided comments change.
+      // This fixes the "sometimes I need to re-enter" issue when the page first renders
+      // from the list article (0 comments) and then the full payload arrives.
+      if (serverCount !== this.lastServerCommentCount) {
+        this.lastServerCommentCount = serverCount;
+        this.updateSortingSnapshot(serverComments);
       }
     });
   }
