@@ -11,24 +11,45 @@
         }
 
       </h1>
-      <p class="subTitle">Dummy data</p>
     </div>
   </header>
 
   @if (article()) {
     <article class="card detail">
-      <div class="meta">
-        <span class="author">{{ article()!.owner }}</span>
-        <span class="dot">•</span>
-        <time class="date">{{ article()!.createdAt | date: 'medium' }}</time>
-        <span class="dot">•</span>
-        <span class="comments">{{ article()!.comments.length }} comments</span>
+      <div class="articleHeader">
+        <div class="meta">
+          <a [routerLink]="['/profile', article()!.ownerUsername]" class="author authorLink">{{ article()!.ownerUsername }}</a>
+          <span class="dot">•</span>
+          <time class="date">{{ article()!.createdAt | relativeTime }}</time>
+        </div>
+        @if (store.canDelete(article()!)) {
+          <button
+            type="button"
+            class="btn iconBtn deleteArticleBtn"
+            (click)="deleteThisArticle()"
+            aria-label="Delete article"
+          >
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 3h6M3 6h18M19 6l-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6m5 4v6m4-6v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        }
       </div>
 
       <h2 class="cardTitle">{{ article()!.title }}</h2>
 
       <div class="body">
         <p class="content">{{ article()!.content }}</p>
+        
+        @if (article()!.images && article()!.images.length > 0) {
+          <div class="imagesGallery">
+            @for (image of article()!.images; track image) {
+              <div class="imageTile" (click)="openLightbox(image)" [style.--bg-image]="'url(' + image + ')'">
+                <img [src]="image" [alt]="article()!.title" class="articleImage" />
+              </div>
+            }
+          </div>
+        }
       </div>
 
       <div class="actions" aria-label="Reactions">
@@ -37,6 +58,7 @@
           class="btn voteBtn"
           [class.active]="store.isUpvoted(article()!)"
           (click)="store.upvote(article()!.id)"
+          [disabled]="!authService.isAuthenticated()"
           aria-label="Like"
         >
           <span class="icon" aria-hidden="true">
@@ -55,6 +77,7 @@
           class="btn voteBtn"
           [class.activeDown]="store.isDownvoted(article()!)"
           (click)="store.downvote(article()!.id)"
+          [disabled]="!authService.isAuthenticated()"
           aria-label="Dislike"
         >
           <span class="icon" aria-hidden="true">
@@ -67,114 +90,197 @@
             <span class="count">{{ article()!.downvotes }}</span>
           </span>
         </button>
-
-          <button type="button" class="btn dangerBtn" (click)="deleteThisArticle()">Delete</button>
       </div>
 
       <div class="divider" role="separator" aria-hidden="true"></div>
 
-      <section class="commentsSection" aria-label="Comments">
-        @if(article()!.comments.length === 0) {
+      <section id="comments" class="commentsSection" aria-label="Comments">
+        @if(!hasComments()) {
           <p class="muted noComments">No comments yet. Be the first to comment!</p>
         }
         <div class="commentsHeader">
-          <h3 class="sectionTitle">Comments</h3>
-          <p class="muted countLine">{{ article()!.comments.length }} comments</p>
+          <div class="commentsHeaderTop">
+            <h3 class="sectionTitle">Comments</h3>
+            <p class="muted countLine">{{ commentCount() }} comments</p>
+          </div>
+          @if (hasComments()) {
+            <div class="sortControl">
+              <label class="sortLabel">Sort by:</label>
+              <select 
+                class="sortSelect"
+                [value]="sortMode()"
+                (change)="setSortMode($any($event.target).value)"
+              >
+                <option value="top">Top First</option>
+                <option value="newest">Newest First</option>
+              </select>
+            </div>
+          }
         </div>
 
         <form class="composer" (submit)="$event.preventDefault(); addRootComment()">
-          <textarea
-            class="input composerInput"
-            rows="3"
-            placeholder="Write a comment…"
-            [value]="newCommentText()"
-            (input)="newCommentText.set(($any($event.target).value))"
-          ></textarea>
-          <div class="composerActions">
-            <button type="submit" class="btn">Post comment</button>
-          </div>
+          @if (authService.isAuthenticated()) {
+            <textarea
+              #commentTextarea
+              class="input composerInput"
+              rows="3"
+              placeholder="Write a comment…"
+              [value]="newCommentText()"
+              (input)="newCommentText.set(($any($event.target).value))"
+              (paste)="handlePaste($event, 'root')"
+            ></textarea>
+          } @else {
+            <div class="loginPrompt">
+              <p class="promptText">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 11v5m0-9.5v.5M8.929 4.93 12 8m3.07-3.07L12 8m7 4a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Please <a [routerLink]="['/auth/signin']" class="authLink">sign in</a> to leave a comment
+              </p>
+            </div>
+          }
+          
+          @if (authService.isAuthenticated()) {
+            @if (newCommentImagePreviews().length > 0) {
+              <div class="commentImagePreviews">
+                @for (preview of newCommentImagePreviews(); let i = $index; track preview.name) {
+                  <div class="commentImagePreview">
+                    <img [src]="preview.url" [alt]="preview.name" />
+                    <button
+                      type="button"
+                      class="btn removeCommentImageBtn"
+                      (click)="removeRootCommentImage(i)"
+                      aria-label="Remove image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+            
+            <div class="composerActions">
+              <input
+                #rootFileInput
+                type="file"
+                multiple
+                accept="image/*"
+                class="composerFileInput hidden"
+                (change)="onRootCommentImageSelect($event)"
+                [disabled]="newCommentImages().length >= 5"
+                aria-label="Add images to comment"
+              />
+              <button
+                type="button"
+                class="btn iconBtn"
+                (click)="rootFileInput.click()"
+                [disabled]="newCommentImages().length >= 5"
+                aria-label="Add images"
+              >
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5-5 5 5M12 5v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button type="submit" class="btn">Post comment</button>
+            </div>
+          }
         </form>
 
-        @if (article()!.comments.length != 0) {
-          <ng-template #thread let-items>
-            <div class="commentsList" role="list">
-              @for (c of items; track c.id) {
-                <article class="comment" role="listitem">
-                  <div class="commentMeta">
-                    <span class="author">{{ c.owner }}</span>
-                    <span class="dot">•</span>
-                    <time class="date">{{ c.createdAt | date: 'mediumDate' }}</time>
-                  </div>
-
-                  <p class="commentBody">{{ c.content }}</p>
-
-                  <div class="commentActions" aria-label="Comment actions">
+        <!-- Reply form template that gets passed to recursive comment threads -->
+        <ng-template #replyFormTpl let-commentId>
+          <form class="replyForm" (submit)="$event.preventDefault(); submitReply(commentId)">
+            <textarea
+              class="input replyInput"
+              rows="3"
+              placeholder="Write a reply…"
+              [value]="replyText()"
+              (input)="replyText.set(($any($event.target).value))"
+              (paste)="handlePaste($event, 'reply')"
+            ></textarea>
+            
+            @if (replyImagePreviews().length > 0) {
+              <div class="commentImagePreviews">
+                @for (preview of replyImagePreviews(); let i = $index; track preview.name) {
+                  <div class="commentImagePreview">
+                    <img [src]="preview.url" [alt]="preview.name" />
                     <button
                       type="button"
-                      class="btn voteBtn miniBtn"
-                      [class.active]="store.isUpvoted(c)"
-                      (click)="store.upvote(c.id)"
-                      aria-label="Like comment"
+                      class="btn removeCommentImageBtn"
+                      (click)="removeReplyImage(i)"
+                      aria-label="Remove image"
                     >
-                      <span class="icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M10 11V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                          <path d="M6 11h4l5.4-6.3c.6-.7 1.7-.2 1.6.7l-.7 5.6H20a2 2 0 0 1 2 2.2l-1.1 7A2 2 0 0 1 18.9 22H10a4 4 0 0 1-4-4v-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                        </svg>
-                      </span>
-                      <span class="label"><span class="count">{{ c.upvotes }}</span></span>
-                    </button>
-
-                    <button
-                      type="button"
-                      class="btn voteBtn miniBtn"
-                      [class.activeDown]="store.isDownvoted(c)"
-                      (click)="store.downvote(c.id)"
-                      aria-label="Dislike comment"
-                    >
-                      <span class="icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M14 13V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                          <path d="M18 13h-4L8.6 19.3c-.6.7-1.7.2-1.6-.7l.7-5.6H4a2 2 0 0 1-2-2.2l1.1-7A2 2 0 0 1 5.1 2H14a4 4 0 0 1 4 4v7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                        </svg>
-                      </span>
-                      <span class="label"><span class="count">{{ c.downvotes }}</span></span>
-                    </button>
-
-                    <button type="button" class="btn miniBtn replyBtn" (click)="startReply(c.id)">
-                      Reply
+                      ✕
                     </button>
                   </div>
-
-                  @if (replyingTo() === c.id) {
-                    <form class="replyForm" (submit)="$event.preventDefault(); submitReply(c.id)">
-                      <textarea
-                        class="input replyInput"
-                        rows="3"
-                        placeholder="Write a reply…"
-                        [value]="replyText()"
-                        (input)="replyText.set(($any($event.target).value))"
-                      ></textarea>
-                      <div class="replyActions">
-                        <button type="submit" class="btn">Reply</button>
-                        <button type="button" class="btn" (click)="cancelReply()">Cancel</button>
-                      </div>
-                    </form>
-                  }
-
-                  @if (c.comments.length > 0) {
-                    <div class="replies">
-                      <ng-container *ngTemplateOutlet="thread; context: { $implicit: c.comments }"></ng-container>
-                    </div>
-                  }
-                </article>
-              }
+                }
+              </div>
+            }
+            
+            <div class="replyActions">
+              <input
+                #replyFileInput
+                type="file"
+                multiple
+                accept="image/*"
+                class="composerFileInput hidden"
+                (change)="onReplyImageSelect($event)"
+                [disabled]="replyImages().length >= 5"
+                aria-label="Add images to reply"
+              />
+              <button
+                type="button"
+                class="btn iconBtn"
+                (click)="replyFileInput.click()"
+                [disabled]="replyImages().length >= 5"
+                aria-label="Add images"
+              >
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5-5 5 5M12 5v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button type="submit" class="btn">Reply</button>
+              <button type="button" class="btn" (click)="cancelReply()">Cancel</button>
             </div>
-          </ng-template>
+          </form>
+        </ng-template>
 
-          <ng-container *ngTemplateOutlet="thread; context: { $implicit: article()!.comments }"></ng-container>
+        @if (hasComments()) {
+          <div class="commentsList" role="list">
+            @for (c of visibleComments(); track c.id) {
+              <drafts-comment-thread
+                [comment]="c"
+                [depth]="0"
+                [replyingToId]="replyingTo()"
+                [visibleRepliesMap]="visibleRepliesCount()"
+                [replyFormTemplate]="replyFormTpl"
+                [sortMode]="sortMode()"
+                (onDelete)="deleteComment($event)"
+                (onStartReply)="startReply($event)"
+                (onOpenLightbox)="openLightbox($event)"
+                (onLoadMoreReplies)="loadMoreReplies($event)"
+              />
+            }
+          </div>
+          
+          @if (hasMoreComments()) {
+            <button 
+              type="button" 
+              class="btn loadMoreBtn" 
+              (click)="loadMoreComments()"
+            >
+              Load more comments ({{ sortedComments().length - visibleCommentsCount() }} remaining)
+            </button>
+          }
         }
-      </section>
-    </article>
-  }
-</main>
+        </section>
+      </article>
+    }
+
+            @if (lightboxImage()) {
+              <div class="lightboxOverlay" (click)="closeLightbox()">
+                <img [src]="lightboxImage()" alt="preview" (click)="$event.stopPropagation()" />
+              </div>
+            }
+
+    <drafts-confirm-modal #confirmModal />
+  </main>

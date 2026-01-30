@@ -16,6 +16,8 @@ export class ArticleCreatePage {
 
   readonly title = signal('');
   readonly content = signal('');
+  readonly selectedImages = signal<File[]>([]);
+  readonly imagePreviews = signal<{ name: string; url: string }[]>([]);
   readonly attemptedSubmit = signal(false);
   readonly submitting = signal(false);
 
@@ -45,17 +47,95 @@ export class ArticleCreatePage {
     );
   });
 
+  onImageSelect(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files) return;
+
+    const newFiles = Array.from(input.files);
+    const currentFiles = this.selectedImages();
+    
+    // Limit to 10 images total
+    const maxImages = 10;
+    const totalFiles = currentFiles.length + newFiles.length;
+    const filesToAdd = totalFiles > maxImages 
+      ? newFiles.slice(0, maxImages - currentFiles.length)
+      : newFiles;
+
+    if (filesToAdd.length === 0) return;
+
+    // Validate file sizes (5MB max per file)
+    const validFiles = filesToAdd.filter(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        console.warn(`File ${file.name} exceeds 5MB limit`);
+        return false;
+      }
+      if (!file.type.startsWith('image/')) {
+        console.warn(`File ${file.name} is not an image`);
+        return false;
+      }
+      return true;
+    });
+
+    this.selectedImages.update(files => [...files, ...validFiles]);
+
+    // Generate previews
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.imagePreviews.update(previews => [
+          ...previews,
+          { name: file.name, url: e.target?.result as string }
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input
+    input.value = '';
+  }
+
+  removeImage(index: number) {
+    this.selectedImages.update(files => files.filter((_, i) => i !== index));
+    this.imagePreviews.update(previews => previews.filter((_, i) => i !== index));
+  }
+
+  onCreatePaste(event: ClipboardEvent) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.kind === 'file' && it.type.startsWith('image/')) {
+        const blob = it.getAsFile();
+        if (!blob) continue;
+        const file = new File([blob], `pasted-${Date.now()}.png`, { type: blob.type });
+        this.selectedImages.update(files => [...files, file]);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.imagePreviews.update(previews => [...previews, { name: file.name, url: e.target?.result as string }]);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }
+
   submit() {
     this.attemptedSubmit.set(true);
     if (!this.canSubmit() || this.submitting()) return;
 
     this.submitting.set(true);
 
-    const id = this.store.addArticle({
+    this.store.addArticle({
       title: this.title().trim(),
       content: this.content().trim(),
-    });
-
-    this.router.navigate(['/articles', id]);
+      images: this.selectedImages()
+    })
+      .then(id => {
+        this.submitting.set(false);
+        this.router.navigate(['/articles', id]);
+      })
+      .catch(error => {
+        console.error('Failed to create article:', error);
+        this.submitting.set(false);
+      });
   }
 }

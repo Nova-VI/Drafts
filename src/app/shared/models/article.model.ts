@@ -7,6 +7,7 @@ export type Article = {
   content: string;
   images: string[];
   owner: string;
+  ownerUsername: string;
   comments: Article[];
   upvotes: number;
   downvotes: number;

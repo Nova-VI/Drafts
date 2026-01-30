@@ -1,9 +1,13 @@
 import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../../core/services/auth.service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { API } from '../../../core/api/api.endpoints';
 import { User } from '../../../core/models/user.model';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-profile',
@@ -16,8 +20,31 @@ export class ProfileComponent {
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
   private http = inject(HttpClient);
+  private route = inject(ActivatedRoute);
 
   currentUser = this.authService.currentUser;
+  
+  // Profile user - either from route param or current user
+  profileUser = toSignal(
+    this.route.paramMap.pipe(
+      map(params => params.get('username')),
+      switchMap(username => {
+        if (!username) {
+          // No username in route, show current user
+          return of(this.currentUser());
+        }
+        // Fetch user by username
+        return this.http.get<User>(API.users.byUsername(username));
+      })
+    )
+  );
+
+  isOwnProfile = computed(() => {
+    const current = this.currentUser();
+    const profile = this.profileUser();
+    return current && profile && current.id === profile.id;
+  });
+
   isEditing = signal(false);
   isLoading = signal(false);
   errorMessage = signal('');
@@ -34,8 +61,10 @@ export class ProfileComponent {
   );
 
   toggleEditMode(): void {
+    if (!this.isOwnProfile()) return; // Only allow editing own profile
+    
     if (!this.isEditing()) {
-      const user = this.currentUser();
+      const user = this.profileUser();
       if (user) {
         this.profileForm.patchValue({
           name: user.name || '',

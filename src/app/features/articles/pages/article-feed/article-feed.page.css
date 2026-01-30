@@ -40,13 +40,34 @@
 }
 
 .row {
-  display: block;
   padding: 12px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .row:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow);
+}
+
+.thumbLink {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border);
 }
 
 .voteBtn {
@@ -72,7 +93,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
 }
 
 .icon {
@@ -100,6 +120,20 @@
   font-size: 12px;
   color: var(--muted);
   margin-bottom: 10px;
+}
+
+.author {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.authorLink {
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.authorLink:hover {
+  color: var(--brand);
 }
 
 .dot {
@@ -139,3 +173,39 @@
   padding: 20px 16px;
   color: var(--muted);
 }
+
+.iconTextBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.iconTextBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.iconTextBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.voteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.voteBtn:disabled:hover {
+  transform: none;
+  background: transparent;
+}
+
