@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
 import { ArticlesStore } from '../../data/articles.store';
 import { AuthService } from '../../../../core/services/auth.service';
-import type { Article } from '../../../../shared/models/article.model';
+import type { Article } from '../../../../core/models/article.model';
 
 export type SortMode = 'top' | 'newest';
 

@@ -8,7 +8,7 @@ import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
 import { ConfirmModalComponent } from '../../../../shared/components/confirm-modal.component';
 import { CommentThreadComponent } from '../../components/comment-thread/comment-thread.component';
 import { AuthService } from '../../../../core/services/auth.service';
-import type { Article } from '../../../../shared/models/article.model';
+import type { Article } from '../../../../core/models/article.model';
 
 type SortMode = 'top' | 'newest';
 

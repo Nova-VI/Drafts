@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import type { Article } from '../../../../shared/models/article.model';
+import type { Article } from '../../../../core/models/article.model';
 import { ArticlesStore } from '../../data/articles.store';
 import { RelativeTimePipe } from '../../../../shared/pipes/relative-time.pipe';
 import { AuthService } from '../../../../core/services/auth.service';
