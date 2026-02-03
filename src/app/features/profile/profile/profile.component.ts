@@ -46,26 +46,7 @@ export class ProfileComponent {
                 this.authService.updateUser(me);
               }),
             )
-          : this.http.get<User>(API.users.byUsername(username)).pipe(
-              catchError((err) => {
-                // Some environments still run an older backend build where this route doesn't exist.
-                // If we get a 404 (often with "Cannot GET /users/username/..."), fall back to listing users.
-                if (err?.status === 404) {
-                  return this.http.get<User[]>(API.users.all).pipe(
-                    map((users) => {
-                      const match = (users ?? []).find(
-                        (u) => (u.username ?? '').toLowerCase() === username.toLowerCase(),
-                      );
-                      if (!match) {
-                        throw new Error('User not found');
-                      }
-                      return match;
-                    }),
-                  );
-                }
-                throw err;
-              }),
-            );
+          : this.http.get<User>(API.users.byUsername(username));
 
         return source$.pipe(
           catchError((err) => {

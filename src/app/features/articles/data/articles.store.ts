@@ -44,7 +44,6 @@ export class ArticlesStore {
   private readonly isLoading = signal<boolean>(true);
   private readonly error = signal<string | null>(null);
   private readonly items = signal<Article[]>([]);
-  private readonly userCache = new Map<string, string>();
 
   private voteStorageKey(userId: string): string {
     return `drafts.articleVotes.${userId}`;
@@ -156,7 +155,7 @@ export class ArticlesStore {
           this.isLoading.set(false);
           this.error.set(null);
 
-          // Backend list endpoint does not include vote relations; hydrate counts via /votes.
+          // Hydrate vote counts via /votes endpoint for accuracy
           this.refreshVoteCounts(articles.map((a) => a.id));
         })
       )
@@ -192,7 +191,6 @@ export class ArticlesStore {
           }));
         });
 
-        // Backend full endpoint includes images/comments but not root vote relations.
         this.refreshVoteCounts([id]);
       }),
     ).subscribe({
@@ -209,9 +207,6 @@ export class ArticlesStore {
   private toFrontendArticle(input: BackendArticle): Article {
     const ownerId = input.authorId ?? input.author?.id ?? 'unknown';
     const authorUsername = input.author?.username;
-    if (ownerId && authorUsername) {
-      this.userCache.set(ownerId, authorUsername);
-    }
 
     const upvoters = Array.isArray(input.upvoters) ? input.upvoters : [];
     const downvoters = Array.isArray(input.downvoters) ? input.downvoters : [];
@@ -238,7 +233,7 @@ export class ArticlesStore {
       content: input.content,
       images,
       owner: ownerId,
-      ownerUsername: authorUsername ?? this.userCache.get(ownerId) ?? ownerId,
+      ownerUsername: authorUsername ?? ownerId,
       comments,
       commentsCount,
       upvotes: upvoters.length,
@@ -256,13 +251,13 @@ export class ArticlesStore {
 
     const rawPath = (img.path ?? '').trim();
     const filename = (img.filename ?? rawPath.split('/').pop() ?? '').trim();
-
-    // If backend already provides dated paths, keep them.
+    
+    // Check if the path already contains the date structure
     if (/uploads\/images\/\d{4}\/\d{2}\/\d{2}\//.test(rawPath) || /uploads\/images\/\d{4}\/\d{2}\/\d{2}\//.test(rawPath.replace(/\\/g, '/'))) {
       return rawPath;
     }
-
-    // Backend stores files under uploads/images/YYYY/MM/DD but DB path is often missing the date segments.
+    
+    // Construct path from metadata if available
     if (filename && img.createdAt) {
       const date = new Date(typeof img.createdAt === 'string' ? img.createdAt : img.createdAt.toISOString());
       if (!Number.isNaN(date.getTime())) {
@@ -391,19 +386,11 @@ export class ArticlesStore {
   }
 
   private currentUserLabel(): string {
-    try {
-      return globalThis?.localStorage?.getItem('username') ?? 'you';
-    } catch {
-      return 'you';
-    }
+    return 'you';
   }
 
   private currentVoterId(): string {
-    try {
-      return globalThis?.localStorage?.getItem('userId') ?? 'anonymous';
-    } catch {
-      return 'anonymous';
-    }
+    return this.authService.currentUser()?.id ?? 'anonymous';
   }
 
   private myVoteOn(article: Article): Vote {
@@ -572,7 +559,6 @@ export class ArticlesStore {
 
     // Ensure the UI has a username immediately even if backend didn't include `author`
     const ownerUsername = currentUser.username ?? currentUser.id;
-    this.userCache.set(currentUser.id, ownerUsername);
 
     this.items.update((list) => [
       { ...createdArticle, owner: currentUser.id, ownerUsername },
@@ -658,7 +644,6 @@ export class ArticlesStore {
 
             // Ensure username for the new reply (backend may not return author relation here)
             const currentUsername = this.authService.currentUser()?.username || currentUser.id;
-            this.userCache.set(currentUser.id, currentUsername);
             const withUsername: Article = {
               ...normalized,
               owner: currentUser.id,

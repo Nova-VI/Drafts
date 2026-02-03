@@ -1,0 +1,120 @@
+<article class="comment" [class.reply]="depth() > 0" role="listitem">
+  <div class="commentHeader">
+    <div class="commentMeta">
+      <a [routerLink]="['/profile', comment().ownerUsername]" class="author authorLink">{{ comment().ownerUsername }}</a>
+      <span class="dot">•</span>
+      <time class="date">{{ comment().createdAt | relativeTime }}</time>
+    </div>
+    @if (store.canDelete(comment())) {
+      <button
+        type="button"
+        class="btn iconBtn miniBtn"
+        (click)="onDelete.emit(comment().id)"
+        aria-label="Delete comment"
+      >
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 3h6M3 6h18M19 6l-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6m5 4v6m4-6v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    }
+  </div>
+
+  <p class="commentBody">{{ comment().content }}</p>
+
+  @if (comment().images && comment().images.length > 0) {
+    <div class="commentImagesGallery">
+      @for (image of comment().images; track image) {
+        <div class="commentImageTile" (click)="onOpenLightbox.emit(image)" [style.--bg-image]="'url(' + image + ')'">
+          <img [src]="image" [alt]="comment().title" class="commentImage" />
+        </div>
+      }
+    </div>
+  }
+
+  <div class="commentActions" aria-label="Comment actions">
+    <button
+      type="button"
+      class="btn voteBtn miniBtn"
+      [class.active]="store.isUpvoted(comment())"
+      (click)="store.upvote(comment().id)"
+      [disabled]="!authService.isAuthenticated()"
+      aria-label="Like comment"
+    >
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 11V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M6 11h4l5.4-6.3c.6-.7 1.7-.2 1.6.7l-.7 5.6H20a2 2 0 0 1 2 2.2l-1.1 7A2 2 0 0 1 18.9 22H10a4 4 0 0 1-4-4v-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="label"><span class="count">{{ comment().upvotes }}</span></span>
+    </button>
+
+    <button
+      type="button"
+      class="btn voteBtn miniBtn"
+      [class.activeDown]="store.isDownvoted(comment())"
+      (click)="store.downvote(comment().id)"
+      [disabled]="!authService.isAuthenticated()"
+      aria-label="Dislike comment"
+    >
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M14 13V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M18 13h-4L8.6 19.3c-.6.7-1.7.2-1.6-.7l.7-5.6H4a2 2 0 0 1-2-2.2l1.1-7A2 2 0 0 1 5.1 2H14a4 4 0 0 1 4 4v7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="label"><span class="count">{{ comment().downvotes }}</span></span>
+    </button>
+
+    @if (authService.isAuthenticated()) {
+      <button
+        type="button"
+        class="btn voteBtn miniBtn"
+        (click)="onStartReply.emit(comment().id)"
+        aria-label="Reply"
+      >
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v4a6 6 0 0 1-6 6h-2.5l-4.5 4.5V19H9a6 6 0 0 1-6-6V9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="label"><span class="count">{{ comment().comments.length }}</span></span>
+      </button>
+    }
+  </div>
+
+  <!-- Reply form when this comment is being replied to -->
+  @if (replyingToId() === comment().id && replyFormTemplate()) {
+    <ng-container *ngTemplateOutlet="replyFormTemplate()!; context: { $implicit: comment().id }"></ng-container>
+  }
+
+  <!-- Nested replies - recursive rendering -->
+  @if (comment().comments.length > 0) {
+    <div class="replies">
+      @for (reply of visibleReplies(); track reply.id) {
+        <drafts-comment-thread
+          [comment]="reply"
+          [depth]="depth() + 1"
+          [replyingToId]="replyingToId()"
+          [visibleRepliesMap]="visibleRepliesMap()"
+          [replyFormTemplate]="replyFormTemplate()"
+          [sortMode]="sortMode()"
+          (onDelete)="onDelete.emit($event)"
+          (onStartReply)="onStartReply.emit($event)"
+          (onOpenLightbox)="onOpenLightbox.emit($event)"
+          (onLoadMoreReplies)="onLoadMoreReplies.emit($event)"
+        />
+      }
+      
+      @if (hasMoreReplies()) {
+        <button 
+          type="button" 
+          class="btn loadMoreBtn" 
+          (click)="onLoadMoreReplies.emit(comment().id)"
+        >
+          Load more replies ({{ remainingRepliesCount() }} remaining)
+        </button>
+      }
+    </div>
+  }
+</article>
