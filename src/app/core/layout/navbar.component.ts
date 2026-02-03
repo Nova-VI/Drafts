@@ -1,5 +1,5 @@
 import { Component, HostBinding, HostListener, OnInit, inject, ElementRef, Renderer2 } from '@angular/core';
-import { NgIf } from '@angular/common';
+
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { NotificationsService } from '../services/notifications.service';
@@ -7,7 +7,7 @@ import { NotificationsService } from '../services/notifications.service';
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [NgIf, RouterLink],
+  imports: [RouterLink],
   templateUrl: './navbar.component.html',
   styleUrls: ['./navbar.component.css']
 })
