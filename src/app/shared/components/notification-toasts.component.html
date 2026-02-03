@@ -1,0 +1,10 @@
+@if (toasts().length > 0) {
+  <div class="toast-stack" role="status" aria-live="polite">
+    @for (toast of toasts(); track toast.id) {
+      <a class="toast" [routerLink]="toast.route" [fragment]="toast.fragment">
+        <span class="toast-dot" aria-hidden="true"></span>
+        <span class="toast-text">{{ toast.message }}</span>
+      </a>
+    }
+  </div>
+}

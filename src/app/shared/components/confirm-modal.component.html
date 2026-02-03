@@ -1,0 +1,20 @@
+@if (isOpen()) {
+  <div class="modal-overlay" (click)="onCancel()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">{{ title() }}</h3>
+      </div>
+      <div class="modal-body">
+        <p>{{ message() }}</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" (click)="onCancel()">
+          Cancel
+        </button>
+        <button type="button" class="btn danger" (click)="onConfirm()">
+          {{ confirmText() }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
